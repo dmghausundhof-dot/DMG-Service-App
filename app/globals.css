@@ -32,7 +32,7 @@ body {
   @apply bg-slate-900 border border-slate-700 focus:border-emerald-500 text-white placeholder:text-slate-500 rounded-2xl py-3 text-[15px] outline-none transition-all sm:py-3.5 sm:text-base pl-14 pr-10 w-full;
 }
 
-/* Grok Upload Zone */
+/* Upload-Zone */
 .grok-dropzone {
   @apply border-2 border-dashed border-slate-700 hover:border-emerald-500 transition-all rounded-3xl p-12 text-center cursor-pointer bg-slate-900/50;
 }

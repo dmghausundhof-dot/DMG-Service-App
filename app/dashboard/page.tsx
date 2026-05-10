@@ -247,7 +247,7 @@ export default async function DashboardOverview() {
             <div className="min-w-0">
               <div className="mb-1 text-lg font-semibold sm:text-2xl sm:mb-2">Neue Anlage hinzufügen</div>
               <p className="text-sm text-slate-400 sm:text-base">
-                Foto hochladen → Grok erkennt automatisch Balkonkraftwerk, Wärmepumpe etc.
+                Per Foto oder manuell – Anlage anlegen und Daten pflegen.
               </p>
             </div>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-2xl bg-emerald-600/10 transition-all group-hover:bg-emerald-600/20 sm:h-14 sm:w-14 sm:self-center">

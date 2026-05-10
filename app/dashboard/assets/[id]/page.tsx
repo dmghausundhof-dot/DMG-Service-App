@@ -272,7 +272,7 @@ export default function AssetDetailPage() {
         model: data.analysis.model || prev.model,
         year_built: data.analysis.year_built ? data.analysis.year_built.toString() : prev.year_built,
         capacity: data.analysis.capacity || prev.capacity,
-        notes: prev.notes || `Grok Confidence: ${Math.round((data.analysis.confidence || 0) * 100)}%`
+        notes: prev.notes || `Konfidenz: ${Math.round((data.analysis.confidence || 0) * 100)}%`
       }))
     } else {
       alert('Analyse fehlgeschlagen: ' + (data.error || 'Unbekannt'))
@@ -552,14 +552,14 @@ export default function AssetDetailPage() {
                 disabled={isAnalyzing} 
                 className="mt-3 w-full btn-primary py-3 flex items-center justify-center gap-2"
               >
-                {isAnalyzing ? <><Loader2 className="w-4 h-4 animate-spin" /> Analysiert...</> : '🔍 Mit Grok neu analysieren'}
+                {isAnalyzing ? <><Loader2 className="w-4 h-4 animate-spin" /> Analysiert...</> : 'Aus Bild neu auswerten'}
               </button>
             )}
 
             {analysis && (
               <div className="mt-4 bg-emerald-950 border border-emerald-900 rounded-2xl p-5 text-sm">
                 <div className="flex items-center gap-2 text-emerald-400 mb-3 font-medium">
-                  <CheckCircle className="w-4 h-4" /> Grok-Analyse aktualisiert
+                  <CheckCircle className="w-4 h-4" /> Auswertung übernommen
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-emerald-400/90">
                   <div>Kategorie: <span className="text-white">{analysis.category}</span></div>
@@ -857,7 +857,7 @@ export default function AssetDetailPage() {
           </h3>
           <div className="text-sm text-slate-400 space-y-2">
             <div>• Wartungsintervall anpassen</div>
-            <div>• Grok-Analyse erneut starten</div>
+            <div>• Aus Bild erneut auswerten</div>
             <div>• Bild aktualisieren</div>
           </div>
         </div>

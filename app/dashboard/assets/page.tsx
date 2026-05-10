@@ -390,7 +390,7 @@ export default function AssetsListPage() {
           </div>
           <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Noch keine Anlagen</h3>
           <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
-            Fügen Sie Ihre erste Anlage hinzu — z. B. Balkonkraftwerk, Wärmepumpe oder Filteranlage. Grok erkennt automatisch alle Details aus einem Foto.
+            Fügen Sie Ihre erste Anlage hinzu — z.&nbsp;B. Balkonkraftwerk, Wärmepumpe oder Filteranlage.
           </p>
           <Link href="/dashboard/assets/new" className="btn-primary inline-flex items-center justify-center gap-2">
             <Plus className="h-5 w-5 shrink-0" />

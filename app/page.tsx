@@ -108,8 +108,8 @@ export default function LandingPage() {
             },
             {
               icon: <div className="text-3xl">📸</div>,
-              title: "KI-gestützte Anlagenerkennung",
-              desc: "Einfach Foto hochladen – Grok erkennt automatisch Hersteller, Typ und Wartungsdaten. Sie bestätigen nur noch."
+              title: "Anlagen mit Foto erfassen",
+              desc: "Foto der Anlage hochladen und Stammdaten eingeben oder aus Vorschlägen übernehmen."
             },
             {
               icon: <div className="text-3xl">🔔</div>,

@@ -55,7 +55,7 @@ function applyMergedToForm(merged: AnalysisFields): {
 
   const parts: string[] = []
   if (typeof merged.confidence === 'number') {
-    parts.push(`KI-Konfidenz: ${Math.round(merged.confidence * 100)}%`)
+    parts.push(`Konfidenz: ${Math.round(merged.confidence * 100)}%`)
   }
   if (merged.web_notes) parts.push(merged.web_notes)
   if (merged.web_sources?.length) {
@@ -109,7 +109,7 @@ function NewAssetForm() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [preferManualOnly, setPreferManualOnly] = useState(false)
-  /** Kamera: Auto-KI nach Aufnahme · Gallerie: nur Bild, kein Auto-Start */
+  /** Kamera: Auto-Auswertung nach Aufnahme · Gallerie: nur Bild */
   const [lastCaptureSource, setLastCaptureSource] = useState<'camera' | 'gallery' | null>(null)
 
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -325,7 +325,7 @@ function NewAssetForm() {
 
       <h1 className="mb-2 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">Neue Anlage</h1>
       <p className="mb-6 text-base text-slate-400 sm:mb-8 sm:text-lg">
-        Kamera mit automatischer Auswertung, Gallerie ohne.
+        Kamera mit Bild-Auswertung, Gallerie ohne.
       </p>
 
       {/* File inputs außerhalb von display:none-Kontext, damit Desktop & Mobil zuverlässig öffnen */}
@@ -428,12 +428,12 @@ function NewAssetForm() {
                   {isAnalyzing ? (
                     <>
                       <Loader2 className="w-6 h-6 animate-spin" />
-                      Bild & Websuche…
+                      Auswertung…
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5" />
-                      Mit Grok auswerten
+                      Aus Bild ausfüllen
                     </>
                   )}
                 </button>
@@ -442,7 +442,7 @@ function NewAssetForm() {
                   onClick={() => setPreferManualOnly(true)}
                   className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
                 >
-                  Ohne KI – nur manuell ausfüllen
+                  Nur manuell ausfüllen
                 </button>
               </>
             ) : (
@@ -463,7 +463,7 @@ function NewAssetForm() {
                     className="btn-secondary flex w-full items-center justify-center gap-2 py-3.5 sm:py-4"
                   >
                     <Sparkles className="w-5 h-5" />
-                    KI erneut auswerten
+                    Erneut auswerten
                   </button>
                 )}
                 <button
@@ -471,7 +471,7 @@ function NewAssetForm() {
                   onClick={() => setPreferManualOnly(true)}
                   className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
                 >
-                  Ohne KI – nur manuell ausfüllen
+                  Nur manuell ausfüllen
                 </button>
               </>
             )}
@@ -486,7 +486,7 @@ function NewAssetForm() {
                 Vorschlag (Bild + Web)
                 {webSearchUsed ? (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-sky-300 bg-sky-950/60 px-2 py-1 rounded-full border border-sky-800/50">
-                    <Globe className="w-3 h-3" /> Websuche genutzt
+                    <Globe className="w-3 h-3" /> Web ergänzt
                   </span>
                 ) : null}
               </div>
@@ -520,7 +520,7 @@ function NewAssetForm() {
             {(visionAnalysis || webEnrichment) && (
               <details className="rounded-2xl border border-slate-800 bg-slate-900/40 text-sm">
                 <summary className="cursor-pointer px-4 py-3 font-medium text-slate-300">
-                  Details: rein visuell vs. Websuche
+                  Details: Bild vs. Web
                 </summary>
                 <div className="px-4 pb-4 pt-2 grid md:grid-cols-2 gap-4 border-t border-slate-800/80">
                   {visionAnalysis ? (
@@ -535,7 +535,7 @@ function NewAssetForm() {
                   ) : null}
                   {webEnrichment ? (
                     <div>
-                      <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Nach Websuche</div>
+                      <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Aus dem Web</div>
                       <ul className="space-y-1 text-slate-400">
                         <li>H: {webEnrichment.manufacturer || '—'}</li>
                         <li>M: {webEnrichment.model || '—'}</li>

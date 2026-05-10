@@ -94,8 +94,8 @@ async function runVision(
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error('Grok vision error:', errorText)
-    throw new Error('Grok Vision API Fehler')
+    console.error('Vision API error:', errorText)
+    throw new Error('Bildanalyse (Vision) fehlgeschlagen')
   }
 
   const result = (await response.json()) as {
@@ -154,7 +154,7 @@ Gib NUR valides JSON zurück (kein Markdown):
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.warn('Grok web responses error:', errorText)
+    console.warn('Web enrichment API error:', errorText)
     return null
   }
 
@@ -215,7 +215,7 @@ const DEMO_WEB: WebEnrichment = {
   filter_type: null,
   confidence: 0.88,
   web_sources: ['Hersteller-Datenblatt (Demo)', 'Fachhandel-Übersicht (Demo)'],
-  web_notes: 'Demo: XAI_API_KEY nicht gesetzt – keine echte Websuche.',
+  web_notes: 'Demo: XAI_API_KEY nicht gesetzt – keine Web-Ergänzung.',
 }
 
 export async function POST(request: NextRequest) {
@@ -265,7 +265,9 @@ export async function POST(request: NextRequest) {
       webEnrichment: web,
       merged,
       webSearchUsed: web !== null,
-      message: web ? 'Bildanalyse und Websuche abgeschlossen.' : 'Bildanalyse ok; Websuche übersprungen oder nicht verfügbar.',
+      message: web
+        ? 'Auswertung abgeschlossen (Bild und Web).'
+        : 'Auswertung aus Bild; Web-Ergänzung nicht verfügbar.',
     })
   } catch (error) {
     console.error('Analyze asset error:', error)
