@@ -6,6 +6,27 @@ import Link from 'next/link'
 import { ArrowLeft, Upload, Loader2, CheckCircle, Calendar, Save, AlertTriangle, Wrench, Edit, FileText, Trash2, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
+import type { MaintenanceGuide } from '@/lib/maintenance-guide'
+
+async function blobToBase64(blob: Blob): Promise<{ b64: string; mime: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      const i = dataUrl.indexOf(',')
+      if (i < 0) {
+        reject(new Error('Daten-URL'))
+        return
+      }
+      resolve({
+        b64: dataUrl.slice(i + 1),
+        mime: blob.type?.trim() ? blob.type : 'image/jpeg',
+      })
+    }
+    reader.onerror = () => reject(new Error('read'))
+    reader.readAsDataURL(blob)
+  })
+}
 
 interface Asset {
   id: string
@@ -114,7 +135,14 @@ export default function AssetDetailPage() {
   const [mimeType, setMimeType] = useState('image/jpeg')
 
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysis, setAnalysis] = useState<any>(null)
+  const [analysis, setAnalysis] = useState<Record<string, unknown> | null>(null)
+  const [analyzePersist, setAnalyzePersist] = useState<{
+    merged: Record<string, unknown>
+    visionAnalysis: Record<string, unknown> | null
+    webEnrichment: Record<string, unknown> | null
+    maintenanceGuide: MaintenanceGuide | null
+    aiConfidence: number | null
+  } | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   const [maintenanceHistory, setMaintenanceHistory] = useState<MaintenanceHistoryItem[]>([])
@@ -241,7 +269,7 @@ export default function AssetDetailPage() {
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    setMimeType(file.type)
+    setMimeType(file.type || 'image/jpeg')
     const reader = new FileReader()
     reader.onload = (ev) => {
       setImagePreview(ev.target?.result as string)
@@ -249,48 +277,119 @@ export default function AssetDetailPage() {
     }
     reader.readAsDataURL(file)
     setAnalysis(null)
+    setAnalyzePersist(null)
+  }
+
+  const resolveImageForAnalysis = async (): Promise<{ b64: string; mime: string } | null> => {
+    if (newImageBase64) return { b64: newImageBase64, mime: mimeType || 'image/jpeg' }
+    if (!imagePreview) return null
+    if (imagePreview.startsWith('data:')) {
+      const mimeMatch = imagePreview.match(/^data:([^;,]+)/)
+      const mimeFromData = mimeMatch?.[1]?.trim()
+      const b64 = imagePreview.split(',', 2)[1]
+      if (!b64) return null
+      return { b64, mime: mimeFromData || mimeType || 'image/jpeg' }
+    }
+    if (/^https?:\/\//i.test(imagePreview)) {
+      try {
+        const resImg = await fetch(imagePreview)
+        if (!resImg.ok) throw new Error(String(resImg.status))
+        const blob = await resImg.blob()
+        const out = await blobToBase64(blob)
+        return { b64: out.b64, mime: out.mime || 'image/jpeg' }
+      } catch {
+        alert(
+          'Das gespeicherte Foto konnte nicht geladen werden (Netzwerk/CORS). Bitte laden Sie dasselbe Bild erneut hoch oder machen Sie ein neues Foto.',
+        )
+        return null
+      }
+    }
+    return null
   }
 
   const analyze = async () => {
-    if (!newImageBase64 && !imagePreview) return
+    if (!imagePreview && !newImageBase64) {
+      alert('Bitte ein Foto hinterlegen.')
+      return
+    }
     setIsAnalyzing(true)
-    const base64ToUse = newImageBase64 || (imagePreview ? imagePreview.split(',')[1] : null)
-    if (!base64ToUse) return
+    try {
+      const resolved = await resolveImageForAnalysis()
+      if (!resolved) return
 
-    const res = await fetch('/api/analyze-asset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: base64ToUse, mimeType })
-    })
-    const data = await res.json() as {
-      success?: boolean
-      merged?: {
-        category?: string
-        manufacturer?: string | null
-        model?: string | null
-        year_built?: number | null
-        capacity?: string | null
-        confidence?: number
+      const res = await fetch('/api/analyze-asset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: resolved.b64, mimeType: resolved.mime }),
+      })
+      const raw = await res.text()
+      let data: {
+        success?: boolean
+        merged?: Record<string, unknown>
+        visionAnalysis?: Record<string, unknown> | null
+        webEnrichment?: Record<string, unknown> | null
+        maintenanceGuide?: MaintenanceGuide | null
+        error?: string
+        detail?: string
       }
-      error?: string
-      detail?: string
+      try {
+        data = raw ? (JSON.parse(raw) as typeof data) : {}
+      } catch {
+        alert('Analyse fehlgeschlagen: Ungültige Server-Antwort.')
+        return
+      }
+
+      if (data.success && data.merged) {
+        const m = data.merged
+        let category = typeof m.category === 'string' ? m.category.trim() : ''
+        if (category === 'Wärmepumpe') category = 'Heizung'
+        const yr = typeof m.year_built === 'number' ? m.year_built : null
+
+        const conf =
+          typeof m.confidence === 'number' ? m.confidence : typeof m.confidence === 'string' ? parseFloat(m.confidence) : null
+
+        setAnalysis(m)
+        setAnalyzePersist({
+          merged: { ...m },
+          visionAnalysis: data.visionAnalysis ?? null,
+          webEnrichment: data.webEnrichment ?? null,
+          maintenanceGuide: data.maintenanceGuide ?? null,
+          aiConfidence: conf !== null && Number.isFinite(conf) ? conf : null,
+        })
+
+        const webNotes = typeof m.web_notes === 'string' ? m.web_notes.trim() : ''
+        const moFromGuide =
+          data.maintenanceGuide?.typical_interval_months != null &&
+          Number.isFinite(data.maintenanceGuide.typical_interval_months)
+            ? Math.min(120, Math.max(1, Math.round(data.maintenanceGuide.typical_interval_months)))
+            : null
+
+        setFormData((prev) => ({
+          ...prev,
+          ...(category ? { category } : {}),
+          manufacturer:
+            m.manufacturer !== undefined ? String(m.manufacturer ?? '') : prev.manufacturer,
+          model: m.model !== undefined ? String(m.model ?? '') : prev.model,
+          year_built: yr != null ? String(yr) : prev.year_built,
+          capacity: m.capacity !== undefined ? String(m.capacity ?? '') : prev.capacity,
+          filter_type: m.filter_type !== undefined ? String(m.filter_type ?? '') : prev.filter_type,
+          maintenance_interval_months:
+            moFromGuide != null ? String(moFromGuide) : prev.maintenance_interval_months,
+          notes:
+            prev.notes.trim() ||
+            [`Konfidenz: ${Math.round((typeof conf === 'number' ? conf : 0) * 100)}%`, webNotes]
+              .filter(Boolean)
+              .join('\n'),
+        }))
+      } else {
+        alert(
+          'Analyse fehlgeschlagen: ' +
+            ([data.error, data.detail].filter(Boolean).join(' – ') || 'Unbekannt'),
+        )
+      }
+    } finally {
+      setIsAnalyzing(false)
     }
-    if (data.success && data.merged) {
-      const m = data.merged
-      setAnalysis(m)
-      setFormData(prev => ({
-        ...prev,
-        category: m.category || prev.category,
-        manufacturer: m.manufacturer || prev.manufacturer,
-        model: m.model || prev.model,
-        year_built: m.year_built != null ? String(m.year_built) : prev.year_built,
-        capacity: m.capacity || prev.capacity,
-        notes: prev.notes || `Konfidenz: ${Math.round((m.confidence || 0) * 100)}%`
-      }))
-    } else {
-      alert('Analyse fehlgeschlagen: ' + ([data.error, data.detail].filter(Boolean).join(' – ') || 'Unbekannt'))
-    }
-    setIsAnalyzing(false)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -419,6 +518,16 @@ export default function AssetDetailPage() {
         updatePayload.image_url = imagePreview
       }
 
+      if (analyzePersist) {
+        updatePayload.ai_analysis = analyzePersist.merged
+        updatePayload.ai_suggested_fields = {
+          vision: analyzePersist.visionAnalysis,
+          web: analyzePersist.webEnrichment,
+        }
+        updatePayload.ai_maintenance_guide = analyzePersist.maintenanceGuide
+        updatePayload.ai_confidence = analyzePersist.aiConfidence
+      }
+
       const { error } = await supabase
         .from('assets')
         .update(updatePayload)
@@ -427,6 +536,7 @@ export default function AssetDetailPage() {
       if (error) throw error
 
       alert('✅ Anlage erfolgreich aktualisiert!')
+      setAnalyzePersist(null)
       // Refresh asset data
       const { data: updatedAsset } = await supabase
         .from('assets')
@@ -551,7 +661,7 @@ export default function AssetDetailPage() {
               </label>
               {imagePreview && (
                 <button 
-                  onClick={() => { setImagePreview(null); setNewImageBase64(null); setAnalysis(null) }} 
+                  onClick={() => { setImagePreview(null); setNewImageBase64(null); setAnalysis(null); setAnalyzePersist(null) }} 
                   className="px-4 py-3 text-sm border border-red-900/50 text-red-400 hover:bg-red-950/50 rounded-2xl transition"
                 >
                   Entfernen
@@ -559,27 +669,58 @@ export default function AssetDetailPage() {
               )}
             </div>
 
-            {imagePreview && !analysis && (
-              <button 
-                onClick={analyze} 
-                disabled={isAnalyzing} 
-                className="mt-3 w-full btn-primary py-3 flex items-center justify-center gap-2"
+            {imagePreview ? (
+              <button
+                type="button"
+                onClick={() => analyze()}
+                disabled={isAnalyzing}
+                className="mt-3 flex w-full items-center justify-center gap-2 py-3 btn-primary disabled:opacity-60"
               >
-                {isAnalyzing ? <><Loader2 className="w-4 h-4 animate-spin" /> Analysiert...</> : 'Aus Bild neu auswerten'}
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Bild wird analysiert…
+                  </>
+                ) : analysis ? (
+                  'Erneut auswerten'
+                ) : (
+                  'Aus Bild auswerten'
+                )}
               </button>
-            )}
+            ) : null}
 
             {analysis && (
-              <div className="mt-4 bg-emerald-950 border border-emerald-900 rounded-2xl p-5 text-sm">
-                <div className="flex items-center gap-2 text-emerald-400 mb-3 font-medium">
-                  <CheckCircle className="w-4 h-4" /> Auswertung übernommen
+              <div className="mt-4 rounded-2xl border border-emerald-900 bg-emerald-950 p-5 text-sm">
+                <div className="mb-3 flex items-center gap-2 font-medium text-emerald-400">
+                  <CheckCircle className="h-4 w-4 shrink-0" /> Neueste KI-Auswertung — mit „Speichern“ übernehmen
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-emerald-400/90">
-                  <div>Kategorie: <span className="text-white">{analysis.category}</span></div>
-                  <div>Hersteller: <span className="text-white">{analysis.manufacturer || '—'}</span></div>
-                  <div>Modell: <span className="text-white">{analysis.model || '—'}</span></div>
-                  <div>Leistung: <span className="text-white">{analysis.capacity || '—'}</span></div>
+                  <div>
+                    Kategorie:{' '}
+                    <span className="text-white">
+                      {String(analysis.category ?? '—')}
+                    </span>
+                  </div>
+                  <div>
+                    Hersteller:{' '}
+                    <span className="text-white">
+                      {String(analysis.manufacturer ?? '—')}
+                    </span>
+                  </div>
+                  <div>
+                    Modell: <span className="text-white">{String(analysis.model ?? '—')}</span>
+                  </div>
+                  <div>
+                    Leistung: <span className="text-white">{String(analysis.capacity ?? '—')}</span>
+                  </div>
                 </div>
+                {analyzePersist?.maintenanceGuide?.summary ? (
+                  <div className="mt-4 border-t border-emerald-900/50 pt-3 text-[13px] text-slate-300">
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-500/95">
+                      Wartungshinweis (KI)
+                    </div>
+                    <p className="leading-relaxed">{analyzePersist.maintenanceGuide.summary}</p>
+                  </div>
+                ) : null}
               </div>
             )}
 
