@@ -10,6 +10,8 @@ export const metadata: Metadata = {
 }
 
 export default function ImpressumPage() {
+  const siteHost = LEGAL_SITE.publicWebsiteUrl.replace(/^https?:\/\//, '')
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
@@ -24,9 +26,14 @@ export default function ImpressumPage() {
 
         <div className="space-y-8 text-sm leading-relaxed text-slate-300 sm:text-base">
           <section>
-            <h2 className="mb-3 text-lg font-semibold text-white">Angaben gemäß § 5 TMG / § 55 RStV</h2>
+            <h2 className="mb-3 text-lg font-semibold text-white">Angaben gemäß §&nbsp;5 TMG</h2>
             <address className="not-italic text-slate-200">
-              {LEGAL_SITE.operatorTradeName}
+              <span className="font-medium text-white">{LEGAL_SITE.operatorTradeName}</span>
+              <br />
+              {LEGAL_SITE.operatorTagline}
+              <br />
+              Inhaber: {LEGAL_SITE.proprietorDisplayName}
+              <br />
               <br />
               {LEGAL_SITE.street}
               <br />
@@ -34,6 +41,18 @@ export default function ImpressumPage() {
               <br />
               {LEGAL_SITE.country}
             </address>
+            <p className="mt-4 text-slate-400">
+              Öffentlicher Auftritt und Kontakt auch unter{' '}
+              <a
+                href={LEGAL_SITE.publicWebsiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline"
+              >
+                {siteHost}
+              </a>{' '}
+              ({LEGAL_SITE.serviceRegion}).
+            </p>
           </section>
 
           <section>
@@ -50,29 +69,48 @@ export default function ImpressumPage() {
                 {LEGAL_SITE.phoneDisplay}
               </a>
             </p>
+            <p className="mt-1">
+              WhatsApp:{' '}
+              <a
+                href={LEGAL_SITE.whatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline"
+              >
+                Nachricht senden (WhatsApp)
+              </a>
+            </p>
           </section>
 
           <section>
             <h2 className="mb-3 text-lg font-semibold text-white">Verantwortlich für den Inhalt</h2>
             <p>
-              Verantwortlich im Sinne von §&nbsp;55 Abs.&nbsp;2 RStV: die Geschäftsführung / der Betrieb der{' '}
-              {LEGAL_SITE.operatorTradeName}, erreichbar über die oben genannten Kontaktdaten.
-            </p>
-            <p className="mt-2 text-slate-400">
-              (Falls juristische Person: Gesellschaft, Registergericht, Registernummer und vertretungsberechtigte Person
-              hier ergänzen – bitte durch Ihre unternehmensrechtlichen Angaben ersetzen.)
+              Verantwortlich im Sinne von §&nbsp;55 Abs.&nbsp;2 RStV:{' '}
+              <strong className="font-medium text-slate-200">{LEGAL_SITE.proprietorDisplayName}</strong>, erreichbar über die
+              obigen Kontaktdaten und die Adresse von {LEGAL_SITE.operatorTradeName}.
             </p>
           </section>
 
           <section>
-            <h2 className="mb-3 text-lg font-semibold text-white">Umsatzsteuer</h2>
-            <p className="text-slate-400">
-              Umsatzsteuer-Identifikationsnummer gemäß §&nbsp;27a UStG: <em>[falls vorhanden eintragen]</em>
+            <h2 className="mb-3 text-lg font-semibold text-white">Hinweis zum Kundenportal</h2>
+            <p>
+              Dieses Impressum gilt auch für das registrierpflichtige{' '}
+              <strong className="font-medium text-slate-200">{LEGAL_SITE.serviceName}</strong>. Informative Inhalte und die
+              Darstellung der Leistungen entsprechen dem öffentlichen Webauftritt unter{' '}
+              <a
+                href={LEGAL_SITE.publicWebsiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline"
+              >
+                {siteHost}
+              </a>
+              .
             </p>
           </section>
 
           <section>
-            <h2 className="mb-3 text-lg font-semibold text-white">Streitschlichtung</h2>
+            <h2 className="mb-3 text-lg font-semibold text-white">EU-Streitschlichtung</h2>
             <p>
               Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{' '}
               <a
@@ -84,7 +122,7 @@ export default function ImpressumPage() {
                 https://ec.europa.eu/consumers/odr/
               </a>
               . Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer
-              Verbraucherschlichtungsstelle teilzunehmen, soweit nicht gesetzlich anders vorgeschrieben.
+              Verbraucherschlichtungsstelle teilzunehmen, soweit gesetzlich nicht etwas anderes gilt.
             </p>
           </section>
 

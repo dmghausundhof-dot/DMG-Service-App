@@ -21,15 +21,39 @@ export default function AgbPage() {
         </Link>
 
         <h1 className="mb-3 text-3xl font-semibold tracking-tight sm:text-4xl">Nutzungsbedingungen</h1>
-        <p className="mb-10 text-sm text-slate-500">für das {LEGAL_SITE.serviceName}</p>
+        <p className="mb-2 text-sm text-slate-500">für das {LEGAL_SITE.serviceName}</p>
+        <p className="mb-10 text-sm leading-relaxed text-slate-400">
+          Anbieter ist{' '}
+          <strong className="font-medium text-slate-300">{LEGAL_SITE.operatorTradeName}</strong> ({LEGAL_SITE.operatorTagline},{' '}
+          {LEGAL_SITE.serviceRegion}). Informationen zu vor Ort angebotenen Handwerks- und Montageleistungen finden Sie unter{' '}
+          <a
+            href={LEGAL_SITE.publicWebsiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-400 hover:underline"
+          >
+            {LEGAL_SITE.publicWebsiteUrl.replace(/^https?:\/\//, '')}
+          </a>
+          .
+        </p>
 
         <div className="space-y-8 text-sm leading-relaxed text-slate-300 sm:text-base">
           <section>
             <h2 className="mb-3 text-lg font-semibold text-white">1. Geltungsbereich</h2>
             <p>
-              Diese Nutzungsbedingungen regeln die Nutzung des Online-Kundenportals der {LEGAL_SITE.operatorTradeName}
-              (nachfolgend „Anbieter“) unter der jeweils angegebenen Internetadresse. Mit der Registrierung oder Nutzung
-              des Portals erkennen Sie diese Bedingungen an.
+              Diese Nutzungsbedingungen regeln ausschließlich die Nutzung des registrierpflichtigen Online-Kundenportals ({LEGAL_SITE.serviceName}) der{' '}
+              {LEGAL_SITE.operatorTradeName} (nachfolgend „Anbieter“). Sie gelten nicht für Einzelaufträge oder Angebote zu
+              Handwerks- und Montageleistungen außerhalb des Portals; diese werden wie auf{' '}
+              <a
+                href={LEGAL_SITE.publicWebsiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline"
+              >
+                {LEGAL_SITE.publicWebsiteUrl.replace(/^https?:\/\//, '')}
+              </a>{' '}
+              beschrieben und gesondert vereinbart. Mit der Registrierung oder Nutzung des Portals erkennen Sie diese
+              Bedingungen an.
             </p>
           </section>
 

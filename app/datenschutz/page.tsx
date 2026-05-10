@@ -10,6 +10,8 @@ export const metadata: Metadata = {
 }
 
 export default function DatenschutzPage() {
+  const siteHost = LEGAL_SITE.publicWebsiteUrl.replace(/^https?:\/\//, '')
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
@@ -27,10 +29,25 @@ export default function DatenschutzPage() {
           <section>
             <h2 className="mb-3 text-lg font-semibold text-white">1. Verantwortliche Stelle</h2>
             <p>
-              Verantwortlich für die Datenverarbeitung im Zusammenhang mit diesem Online-Angebot:
+              Verantwortlich für die Datenverarbeitung im Zusammenhang mit diesem Online-Angebot ({LEGAL_SITE.serviceName}{' '}
+              und zusammenhängende Auftritte) entspricht der öffentlichen Darstellung unter{' '}
+              <a
+                href={LEGAL_SITE.publicWebsiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline"
+              >
+                {siteHost}
+              </a>
+              :
             </p>
             <address className="mt-3 not-italic text-slate-200">
-              {LEGAL_SITE.operatorTradeName}
+              <span className="font-medium text-white">{LEGAL_SITE.operatorTradeName}</span>
+              <br />
+              {LEGAL_SITE.operatorTagline}
+              <br />
+              Inhaber: {LEGAL_SITE.proprietorDisplayName}
+              <br />
               <br />
               {LEGAL_SITE.street}
               <br />
@@ -47,6 +64,16 @@ export default function DatenschutzPage() {
               <a href={`tel:${LEGAL_SITE.phoneTel}`} className="text-emerald-400 hover:underline">
                 {LEGAL_SITE.phoneDisplay}
               </a>
+              <br />
+              WhatsApp:{' '}
+              <a
+                href={LEGAL_SITE.whatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-400 hover:underline"
+              >
+                Kontakt (WhatsApp)
+              </a>
             </address>
           </section>
 
@@ -62,14 +89,15 @@ export default function DatenschutzPage() {
           <section>
             <h2 className="mb-3 text-lg font-semibold text-white">3. Hosting & Infrastruktur</h2>
             <p>
-              Unsere Website und das Kundenportal werden über einen Hosting-Anbieter betrieben (z.&nbsp;B. Vercel Inc.,
-              USA, bzw. entsprechende Rechenzentren innerhalb der EU, je nach Konfiguration Ihres Deployments). Der
-              Hoster verarbeitet Bestands- und Nutzungsdaten in dem Maße, wie dies zur Bereitstellung der Seite und zur
-              Sicherheit (z.&nbsp;B. Zugriffsprotokolle) erforderlich ist. Rechtsgrundlage ist Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;f
-              DSGVO (berechtigtes Interesse an sicherem und stabilem Betrieb). Mit dem Hoster bestehen – soweit
-              erforderlich – Auftragsverträge gem. Art.&nbsp;28 DSGVO. Bei einer Datenübermittlung in ein Drittland (z.&nbsp;B.
-              USA) stützen wir uns auf geeignete Garantien (z.&nbsp;B. EU-Standardvertragsklauseln), sofern keine
-              Angemessenheitsbeschluss-Lage vorliegt.
+              Der öffentliche Auftritt unter {siteHost} und dieses{' '}
+              <strong className="font-medium text-slate-200">{LEGAL_SITE.serviceName}</strong> werden über Hosting-Anbieter
+              betrieben (z.&nbsp;B. Vercel Inc., USA, bzw. entsprechende Rechenzentren innerhalb der EU – je nach
+              Konfiguration des Deployments). Der Hoster verarbeitet Bestands- und Nutzungsdaten in dem Maße, wie dies zur
+              Bereitstellung der Seite und zur Sicherheit (z.&nbsp;B. Zugriffsprotokolle) erforderlich ist.
+              Rechtsgrundlage ist Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;f DSGVO (berechtigtes Interesse an sicherem und stabilem
+              Betrieb). Mit dem Hoster bestehen – soweit erforderlich – Auftragsverträge gemäß Art.&nbsp;28 DSGVO. Bei einer
+              Datenübermittlung in ein Drittland (z.&nbsp;B. USA) stützen wir uns auf geeignete Garantien (z.&nbsp;B.
+              EU-Standardvertragsklauseln), sofern kein Angemessenheitsbeschluss vorliegt.
             </p>
           </section>
 
