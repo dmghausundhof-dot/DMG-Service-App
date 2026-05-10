@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+/** Längere Laufzeit für Reasoning-/Vision-Aufrufe (Vercel). */
+export const maxDuration = 120
+
 type VisionAnalysis = {
   category: string
   manufacturer: string | null
@@ -31,8 +34,11 @@ Gib NUR ein valides JSON-Objekt zurück mit exakt diesen Feldern (kein Markdown,
 Wenn du dir unsicher bist, setze das Feld auf null und senke confidence. Sei präzise und konservativ.`
 
 function parseJsonObject<T>(raw: string): T {
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  const slice = jsonMatch ? jsonMatch[0] : raw
+  const trimmed = raw.trim()
+  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)
+  const body = (fence ? fence[1].trim() : trimmed)
+  const jsonMatch = body.match(/\{[\s\S]*\}/)
+  const slice = jsonMatch ? jsonMatch[0] : body
   return JSON.parse(slice) as T
 }
 
@@ -64,7 +70,11 @@ async function runVision(
   mimeType: string,
   visionModel: string,
 ): Promise<VisionAnalysis> {
-  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+  let mime = (mimeType && mimeType.includes('/') ? mimeType : 'image/jpeg').toLowerCase()
+  if (mime === 'image/jpg') mime = 'image/jpeg'
+  const imageUrl = `data:${mime};base64,${imageBase64}`
+
+  const response = await fetch('https://api.x.ai/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -72,38 +82,45 @@ async function runVision(
     },
     body: JSON.stringify({
       model: visionModel,
-      messages: [
+      temperature: 0.1,
+      input: [
         {
           role: 'user',
           content: [
-            { type: 'text', text: VISION_PROMPT },
             {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${imageBase64}`,
-                detail: 'high',
-              },
+              type: 'input_image',
+              image_url: imageUrl,
+              detail: 'high',
+            },
+            {
+              type: 'input_text',
+              text: VISION_PROMPT,
             },
           ],
         },
       ],
-      max_tokens: 500,
-      temperature: 0.1,
     }),
   })
 
   if (!response.ok) {
     const errorText = await response.text()
     console.error('Vision API error:', errorText)
-    throw new Error('Bildanalyse (Vision) fehlgeschlagen')
+    throw new Error(
+      errorText.slice(0, 280) || 'Bildanalyse (Vision): API-Fehler ohne Details',
+    )
   }
 
-  const result = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>
+  const payload = (await response.json()) as Record<string, unknown>
+  const text = extractResponsesOutputText(payload)
+  if (!text) throw new Error('Leere Vision-Antwort (responses)')
+  try {
+    return parseJsonObject<VisionAnalysis>(text)
+  } catch (e) {
+    console.warn('Vision JSON parse:', text.slice(0, 800))
+    throw new Error(
+      'Vision-Antwort war kein erwartetes JSON. Bitte erneut fotografieren oder anderes Bild.',
+    )
   }
-  const content = result.choices?.[0]?.message?.content
-  if (!content) throw new Error('Leere Vision-Antwort')
-  return parseJsonObject<VisionAnalysis>(content)
 }
 
 async function runWebEnrichment(
@@ -227,8 +244,10 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = process.env.XAI_API_KEY
-    const visionModel = process.env.XAI_VISION_MODEL || 'grok-2-vision'
-    const webModel = process.env.XAI_WEB_MODEL || 'grok-3-fast'
+    const defaultModel = 'grok-4-1-fast-reasoning'
+    const sharedModel = process.env.XAI_MODEL
+    const visionModel = process.env.XAI_VISION_MODEL || sharedModel || defaultModel
+    const webModel = process.env.XAI_WEB_MODEL || sharedModel || defaultModel
 
     if (!apiKey) {
       const merged = mergeVisionAndWeb(DEMO_VISION, DEMO_WEB)
@@ -247,7 +266,8 @@ export async function POST(request: NextRequest) {
       vision = await runVision(apiKey, imageBase64, mimeType, visionModel)
     } catch (e) {
       console.error(e)
-      return NextResponse.json({ error: 'Bildanalyse fehlgeschlagen' }, { status: 500 })
+      const detail = e instanceof Error ? e.message : 'Unbekannter Fehler'
+      return NextResponse.json({ error: 'Bildanalyse fehlgeschlagen', detail }, { status: 502 })
     }
 
     let web: WebEnrichment | null = null

@@ -261,21 +261,33 @@ export default function AssetDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64: base64ToUse, mimeType })
     })
-    const data = await res.json()
-    if (data.success && data.analysis) {
-      setAnalysis(data.analysis)
-      // Merge suggestions without overwriting everything
+    const data = await res.json() as {
+      success?: boolean
+      merged?: {
+        category?: string
+        manufacturer?: string | null
+        model?: string | null
+        year_built?: number | null
+        capacity?: string | null
+        confidence?: number
+      }
+      error?: string
+      detail?: string
+    }
+    if (data.success && data.merged) {
+      const m = data.merged
+      setAnalysis(m)
       setFormData(prev => ({
         ...prev,
-        category: data.analysis.category || prev.category,
-        manufacturer: data.analysis.manufacturer || prev.manufacturer,
-        model: data.analysis.model || prev.model,
-        year_built: data.analysis.year_built ? data.analysis.year_built.toString() : prev.year_built,
-        capacity: data.analysis.capacity || prev.capacity,
-        notes: prev.notes || `Konfidenz: ${Math.round((data.analysis.confidence || 0) * 100)}%`
+        category: m.category || prev.category,
+        manufacturer: m.manufacturer || prev.manufacturer,
+        model: m.model || prev.model,
+        year_built: m.year_built != null ? String(m.year_built) : prev.year_built,
+        capacity: m.capacity || prev.capacity,
+        notes: prev.notes || `Konfidenz: ${Math.round((m.confidence || 0) * 100)}%`
       }))
     } else {
-      alert('Analyse fehlgeschlagen: ' + (data.error || 'Unbekannt'))
+      alert('Analyse fehlgeschlagen: ' + ([data.error, data.detail].filter(Boolean).join(' – ') || 'Unbekannt'))
     }
     setIsAnalyzing(false)
   }

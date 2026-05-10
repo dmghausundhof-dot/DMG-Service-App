@@ -109,7 +109,6 @@ function NewAssetForm() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [preferManualOnly, setPreferManualOnly] = useState(false)
-  /** Kamera: Auto-Auswertung nach Aufnahme · Gallerie: nur Bild */
   const [lastCaptureSource, setLastCaptureSource] = useState<'camera' | 'gallery' | null>(null)
 
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -125,7 +124,8 @@ function NewAssetForm() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageBase64: b64, mimeType: mime }),
         })
-        const data = (await res.json()) as {
+        const raw = await res.text()
+        let data: {
           success?: boolean
           merged?: AnalysisFields
           visionAnalysis?: AnalysisFields
@@ -133,9 +133,17 @@ function NewAssetForm() {
           webSearchUsed?: boolean
           message?: string
           error?: string
+          detail?: string
+        } = {}
+        try {
+          data = raw ? (JSON.parse(raw) as typeof data) : {}
+        } catch {
+          alert('Analyse fehlgeschlagen: Ungültige Server-Antwort.')
+          return
         }
         if (!data.success || !data.merged) {
-          alert('Analyse fehlgeschlagen: ' + (data.error || 'Unbekannt'))
+          const hint = [data.error, data.detail].filter(Boolean).join(' – ')
+          alert('Analyse fehlgeschlagen: ' + (hint || 'Unbekannt'))
           return
         }
         setVisionAnalysis(data.visionAnalysis ?? null)
@@ -181,11 +189,9 @@ function NewAssetForm() {
         setAnalysisMessage(null)
         setWebSearchUsed(false)
         setPreferManualOnly(false)
-        if (source === 'camera') {
-          queueMicrotask(() => {
-            void analyzeWithData(b64, mime)
-          })
-        }
+        queueMicrotask(() => {
+          void analyzeWithData(b64, mime)
+        })
       }
       reader.readAsDataURL(file)
     },
@@ -325,7 +331,7 @@ function NewAssetForm() {
 
       <h1 className="mb-2 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">Neue Anlage</h1>
       <p className="mb-6 text-base text-slate-400 sm:mb-8 sm:text-lg">
-        Kamera mit Bild-Auswertung, Gallerie ohne.
+        Nach Foto oder Galerie startet die KI-Auswertung automatisch (JPEG/PNG empfohlen).
       </p>
 
       {/* File inputs außerhalb von display:none-Kontext, damit Desktop & Mobil zuverlässig öffnen */}
@@ -357,7 +363,6 @@ function NewAssetForm() {
         />
       </div>
 
-      {/* Zwei Zugänge: Kamera (mit Auto-KI) · Gallerie (Bild wie gewählt) */}
       <div className="mb-6 space-y-3 sm:mb-8">
         <p className="text-[10px] font-semibold tracking-widest text-slate-500 sm:text-xs">FOTO</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
@@ -417,64 +422,35 @@ function NewAssetForm() {
 
         {imagePreview && !mergedAnalysis && !preferManualOnly && (
           <div className="space-y-3">
-            {lastCaptureSource === 'gallery' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={analyze}
-                  disabled={isAnalyzing}
-                  className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 sm:gap-3 sm:py-4 sm:text-lg"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                      Auswertung…
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      Aus Bild ausfüllen
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreferManualOnly(true)}
-                  className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
-                >
-                  Nur manuell ausfüllen
-                </button>
-              </>
-            ) : (
-              <>
-                {isAnalyzing ? (
-                  <div className="rounded-2xl border border-emerald-900/50 bg-emerald-950/25 px-4 py-4 sm:px-5 sm:py-5">
-                    <div className="flex items-start gap-3">
-                      <Loader2 className="mt-0.5 h-6 w-6 shrink-0 animate-spin text-emerald-400" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-200">KI wertet Ihr Foto aus…</p>
-                      </div>
-                    </div>
+            {isAnalyzing ? (
+              <div className="rounded-2xl border border-emerald-900/50 bg-emerald-950/25 px-4 py-4 sm:px-5 sm:py-5">
+                <div className="flex items-start gap-3">
+                  <Loader2 className="mt-0.5 h-6 w-6 shrink-0 animate-spin text-emerald-400" />
+                  <div>
+                    <p className="text-sm font-medium text-slate-200">
+                      KI wertet Ihr Foto aus
+                      {lastCaptureSource === 'gallery' ? ' (Galerie)' : ''}…
+                    </p>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={analyze}
-                    className="btn-secondary flex w-full items-center justify-center gap-2 py-3.5 sm:py-4"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    Erneut auswerten
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setPreferManualOnly(true)}
-                  className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
-                >
-                  Nur manuell ausfüllen
-                </button>
-              </>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={analyze}
+                className="btn-secondary flex w-full items-center justify-center gap-2 py-3.5 sm:py-4"
+              >
+                <Sparkles className="w-5 h-5" />
+                Erneut auswerten
+              </button>
             )}
+            <button
+              type="button"
+              onClick={() => setPreferManualOnly(true)}
+              className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
+            >
+              Nur manuell ausfüllen
+            </button>
           </div>
         )}
 
