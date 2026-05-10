@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 const baseNavItems = [
   { href: '/dashboard', label: 'Übersicht', icon: House },
@@ -48,29 +49,31 @@ export default function DashboardShell({
   useEffect(() => {
     const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, full_name, email')
-          .eq('user_id', user.id)
-          .single()
-        
-        if (profile?.role === 'admin') {
-          setUserRole('admin')
-        }
-        
-        setUserName(profile?.full_name || user.email?.split('@')[0] || 'Kunde')
-        setUserEmail(profile?.email || user.email || '')
+      if (!user) return
+
+      await getOrCreateProfileId(supabase, user)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, full_name, email')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (profile?.role === 'admin') {
+        setUserRole('admin')
       }
+
+      setUserName(profile?.full_name || user.email?.split('@')[0] || 'Kunde')
+      setUserEmail(profile?.email || user.email || '')
     }
     fetchUserData()
   }, [supabase])
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-72 flex-col bg-slate-900 border-r border-slate-800">
-        <div className="p-6 border-b border-slate-800">
+    <div className="flex h-[100dvh] overflow-hidden bg-slate-950">
+      {/* Desktop Sidebar: feste Höhe wie Viewport, wächst nicht mit Hauptinhalt */}
+      <aside className="hidden h-full w-72 shrink-0 flex-col overflow-hidden border-r border-slate-800 bg-slate-900 lg:flex">
+        <div className="shrink-0 border-b border-slate-800 p-6">
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image 
               src="/dmg-smart-house-logo.png" 
@@ -86,7 +89,7 @@ export default function DashboardShell({
           </Link>
         </div>
 
-        <div className="flex-1 px-3 py-8">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-8">
           <div className="px-3 mb-4 text-xs font-semibold text-slate-500 tracking-widest">MENÜ</div>
           <nav className="space-y-1">
             {(userRole === 'admin' ? [...baseNavItems, adminNavItem] : baseNavItems).map((item) => {
@@ -112,7 +115,7 @@ export default function DashboardShell({
           </nav>
         </div>
 
-        <div className="p-6 border-t border-slate-800">
+        <div className="shrink-0 border-t border-slate-800 p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-9 h-9 bg-slate-700 rounded-full flex items-center justify-center">
               <User className="w-4 h-4" />
@@ -131,12 +134,12 @@ export default function DashboardShell({
             Abmelden
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Hauptbereich scrollt eigenständig, Header/Footer bleiben im Layout */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top Navbar */}
-        <header className="h-20 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md flex items-center justify-between px-6 lg:px-10 sticky top-0 z-40">
+        <header className="z-40 flex h-20 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950/95 px-6 backdrop-blur-md lg:px-10">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Button */}
             <button 
@@ -174,13 +177,11 @@ export default function DashboardShell({
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6 lg:p-10 overflow-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto p-6 lg:p-10">
           {children}
         </main>
 
-        {/* Subtle Footer Contact */}
-        <footer className="border-t border-slate-800 bg-slate-900 px-6 py-4 text-xs text-slate-500 flex items-center justify-between">
+        <footer className="flex shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-6 py-4 text-xs text-slate-500">
           <div>DMG Service • Wiesloch • Rhein-Neckar</div>
           <div className="flex items-center gap-4">
             <a href="tel:+49123456789" className="hover:text-emerald-400 transition">📞 0176 12345678</a>

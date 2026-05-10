@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Upload, Loader2, CheckCircle, Calendar, Save, AlertTriangle, Wrench, Edit, FileText, Trash2, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 interface Asset {
   id: string
@@ -124,14 +125,14 @@ export default function AssetDetailPage() {
     async function loadObjects() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single()
-      if (profile) {
-        const { data } = await supabase.from('objects').select('id, name, city').eq('profile_id', profile.id)
+      const pid = await getOrCreateProfileId(supabase, user)
+      if (pid) {
+        const { data } = await supabase.from('objects').select('id, name, city').eq('profile_id', pid)
         if (data) setObjects(data)
       }
     }
     loadObjects()
-  }, [])
+  }, [supabase])
 
   // Fetch asset
   useEffect(() => {
@@ -146,9 +147,9 @@ export default function AssetDetailPage() {
         return
       }
 
-      const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single()
-      if (!profile) {
-        setError('Profil nicht gefunden')
+      const pid = await getOrCreateProfileId(supabase, user)
+      if (!pid) {
+        setError('Profil konnte nicht geladen werden')
         setLoading(false)
         return
       }
@@ -157,12 +158,20 @@ export default function AssetDetailPage() {
         .from('assets')
         .select(`
           *, 
-          objects (name, city)
+          objects (name, city, profile_id)
         `)
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       if (fetchError || !assetData) {
+        setError('Anlage nicht gefunden oder Sie haben keine Berechtigung.')
+        setLoading(false)
+        return
+      }
+
+      const embedded = assetData.objects as { profile_id?: string } | { profile_id?: string }[] | null
+      const objRow = Array.isArray(embedded) ? embedded[0] : embedded
+      if (!objRow?.profile_id || objRow.profile_id !== pid) {
         setError('Anlage nicht gefunden oder Sie haben keine Berechtigung.')
         setLoading(false)
         return
@@ -227,7 +236,7 @@ export default function AssetDetailPage() {
     }
 
     fetchAsset()
-  }, [id, router])
+  }, [id, router, supabase])
 
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

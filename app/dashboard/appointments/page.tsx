@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Search, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import jsPDF from 'jspdf'
 
 // Base64 encoded DMG house logo (80x80 PNG, transparent background)
@@ -75,13 +76,14 @@ export default function AppointmentsListPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (profile?.id) {
+      if (pid) {
+        const { data: userObjs } = await supabase.from('objects').select('id').eq('profile_id', pid)
+        const objectIds = userObjs?.map((o) => o.id) ?? []
+        const idFilter =
+          objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000']
+
         const { data: appointmentsData, count } = await supabase
           .from('appointments')
           .select(`
@@ -99,6 +101,7 @@ export default function AppointmentsListPage() {
             proposed_time_window,
             reschedule_reason
           `, { count: 'exact' })
+          .in('object_id', idFilter)
           .order('preferred_date', { ascending: true })
           .limit(50)
 

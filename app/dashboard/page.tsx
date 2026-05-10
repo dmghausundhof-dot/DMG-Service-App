@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import Link from 'next/link'
 import { Calendar, Wrench, FileText, ArrowRight, Plus, MapPin } from 'lucide-react'
 
@@ -12,30 +13,32 @@ export default async function DashboardOverview() {
     return <div>Bitte anmelden...</div>
   }
 
-  // Fetch profile for greeting
+  const profileId = await getOrCreateProfileId(supabase, user)
+  if (!profileId) {
+    return <div>Profil konnte nicht geladen werden. Bitte Seite neu laden oder den Support kontaktieren.</div>
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, full_name')
-    .eq('user_id', user.id)
-    .single()
+    .eq('id', profileId)
+    .maybeSingle()
 
   const userName = profile?.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'Kunde'
 
   // Get user's object IDs
   let objectIds: string[] = []
-  if (profile?.id) {
-    const { data: userObjects } = await supabase
-      .from('objects')
-      .select('id')
-      .eq('profile_id', profile.id)
-    objectIds = userObjects?.map(o => o.id) || []
-  }
+  const { data: userObjects } = await supabase
+    .from('objects')
+    .select('id')
+    .eq('profile_id', profileId)
+  objectIds = userObjects?.map(o => o.id) || []
 
   // Fetch real counts from Supabase
   const { count: totalObjects = 0 } = await supabase
     .from('objects')
     .select('*', { count: 'exact', head: true })
-    .eq('profile_id', profile?.id || '')
+    .eq('profile_id', profileId)
 
   const { count: totalAssets = 0 } = await supabase
     .from('assets')
@@ -65,7 +68,7 @@ export default async function DashboardOverview() {
   const { data: objectsRows } = await supabase
     .from('objects')
     .select('id, name, street, city')
-    .eq('profile_id', profile?.id || '')
+    .eq('profile_id', profileId)
     .order('created_at', { ascending: false })
   const objects = objectsRows ?? []
 

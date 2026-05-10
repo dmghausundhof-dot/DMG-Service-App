@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Home, MapPin, Plus, Edit, Trash2, Calendar, Wrench, FileText, Save } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 interface ObjectItem {
   id: string
@@ -72,14 +73,10 @@ export default function ObjectDetailPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (!profile) {
-        setError('Profil nicht gefunden')
+      if (!pid) {
+        setError('Profil konnte nicht geladen werden')
         setLoading(false)
         return
       }
@@ -89,8 +86,8 @@ export default function ObjectDetailPage() {
         .from('objects')
         .select('*')
         .eq('id', id)
-        .eq('profile_id', profile.id)
-        .single()
+        .eq('profile_id', pid)
+        .maybeSingle()
 
       if (objectError || !objectData) {
         setError('Objekt nicht gefunden oder keine Berechtigung')

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Loader2, Save, X, Edit2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import DeleteConfirmation from '@/components/DeleteConfirmation'
 
 interface Appointment {
@@ -88,14 +89,10 @@ export default function AppointmentDetailPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (!profile) {
-        setError('Profil nicht gefunden')
+      if (!pid) {
+        setError('Profil konnte nicht geladen werden')
         setLoading(false)
         return
       }
@@ -104,12 +101,20 @@ export default function AppointmentDetailPage() {
         .from('appointments')
         .select(`
           *, 
-          objects (name, city)
+          objects (name, city, profile_id)
         `)
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
       if (fetchError || !apptData) {
+        setError('Termin nicht gefunden oder Sie haben keine Berechtigung.')
+        setLoading(false)
+        return
+      }
+
+      const emb = apptData.objects as { profile_id?: string } | { profile_id?: string }[] | null
+      const objRow = Array.isArray(emb) ? emb[0] : emb
+      if (!objRow?.profile_id || objRow.profile_id !== pid) {
         setError('Termin nicht gefunden oder Sie haben keine Berechtigung.')
         setLoading(false)
         return

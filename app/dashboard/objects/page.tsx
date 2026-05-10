@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Home, MapPin, Search, X, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import jsPDF from 'jspdf'
 
 interface ObjectItem {
@@ -37,13 +38,9 @@ export default function ObjectsListPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (profile?.id) {
+      if (pid) {
         const { data: objectsData, count } = await supabase
           .from('objects')
           .select(`
@@ -55,7 +52,7 @@ export default function ObjectsListPage() {
             notes, 
             created_at
           `, { count: 'exact' })
-          .eq('profile_id', profile.id)
+          .eq('profile_id', pid)
           .order('created_at', { ascending: false })
 
         const loadedObjects = (objectsData as ObjectItem[]) || []

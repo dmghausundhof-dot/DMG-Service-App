@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, Loader2, CheckCircle, Save, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 interface ObjectOption {
   id: string
@@ -42,17 +43,13 @@ export default function NewAppointmentPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (profile) {
+      if (pid) {
         const { data: objectsData } = await supabase
           .from('objects')
           .select('id, name, city')
-          .eq('profile_id', profile.id)
+          .eq('profile_id', pid)
           .order('created_at', { ascending: false })
 
         if (objectsData && objectsData.length > 0) {
@@ -87,13 +84,9 @@ export default function NewAppointmentPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Nicht eingeloggt')
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (!profile) throw new Error('Profil nicht gefunden')
+      if (!pid) throw new Error('Profil konnte nicht geladen werden.')
 
       const { error: insertError } = await supabase
         .from('appointments')

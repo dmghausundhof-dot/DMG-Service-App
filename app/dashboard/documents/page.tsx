@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, FileText, Download, Eye, Search, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import jsPDF from 'jspdf'
 
 // Base64 encoded DMG house logo (80x80 PNG, transparent background)
@@ -55,13 +56,15 @@ export default function DocumentsListPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (profile?.id) {
+      if (pid) {
+        const { data: userObjs } = await supabase.from('objects').select('id').eq('profile_id', pid)
+        const objectIds = userObjs?.map((o) => o.id) ?? []
+        if (objectIds.length === 0) {
+          setDocuments([])
+          setTotalDocuments(0)
+        } else {
         const { data: documentsData, count } = await supabase
           .from('documents')
           .select(`
@@ -75,6 +78,7 @@ export default function DocumentsListPage() {
             object_id,
             objects (name, city)
           `, { count: 'exact' })
+          .in('object_id', objectIds)
           .order('created_at', { ascending: false })
 
         const rows = documentsData ?? []
@@ -88,6 +92,7 @@ export default function DocumentsListPage() {
         })
         setDocuments(normalized)
         setTotalDocuments(count || 0)
+        }
       }
       setLoading(false)
     }

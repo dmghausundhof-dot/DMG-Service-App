@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Upload, Loader2, CheckCircle, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 export default function NewDocumentPage() {
   const router = useRouter()
@@ -23,9 +24,9 @@ export default function NewDocumentPage() {
     async function loadObjects() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single()
-      if (profile) {
-        const { data } = await supabase.from('objects').select('id, name, city').eq('profile_id', profile.id).order('name')
+      const pid = await getOrCreateProfileId(supabase, user)
+      if (pid) {
+        const { data } = await supabase.from('objects').select('id, name, city').eq('profile_id', pid).order('name')
         if (data) setObjects(data)
       }
     }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Home, Loader2, CheckCircle, Save } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 export default function NewObjectPage() {
   const router = useRouter()
@@ -37,18 +38,13 @@ export default function NewObjectPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Nicht eingeloggt')
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!profile) throw new Error('Profil nicht gefunden')
+      const pid = await getOrCreateProfileId(supabase, user)
+      if (!pid) throw new Error('Profil konnte nicht angelegt oder geladen werden.')
 
       const { error } = await supabase
         .from('objects')
         .insert({
-          profile_id: profile.id,
+          profile_id: pid,
           name: formData.name,
           street: formData.street || null,
           postal_code: formData.postal_code || null,

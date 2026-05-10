@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Plus, Wrench, Calendar, AlertTriangle, CheckCircle, Search, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import jsPDF from 'jspdf'
 
 // Base64 encoded DMG house logo (80x80 PNG, transparent background)
@@ -88,13 +89,14 @@ export default function AssetsListPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const pid = await getOrCreateProfileId(supabase, user)
 
-      if (profile?.id) {
+      if (pid) {
+        const { data: userObjs } = await supabase.from('objects').select('id').eq('profile_id', pid)
+        const objectIds = userObjs?.map((o) => o.id) ?? []
+        const idFilter =
+          objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000']
+
         let query = supabase
           .from('assets')
           .select(`
@@ -109,6 +111,7 @@ export default function AssetsListPage() {
             object_id,
             objects (name, city)
           `, { count: 'exact' })
+          .in('object_id', idFilter)
           .order('next_maintenance_due', { ascending: true, nullsFirst: false })
           .order('created_at', { ascending: false })
 

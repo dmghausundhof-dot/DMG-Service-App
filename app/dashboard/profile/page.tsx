@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import { User, Save, ArrowLeft, Lock, Bell, Mail, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -33,11 +34,13 @@ export default function ProfilePage() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
+        await getOrCreateProfileId(supabase, user)
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, phone, email, notes, reminder_email, reminder_whatsapp, reminder_days_before, whatsapp_phone')
           .eq('user_id', user.id)
-          .single()
+          .maybeSingle()
         
         if (profile) {
           setFullName(profile.full_name || '')
