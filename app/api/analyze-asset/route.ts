@@ -16,6 +16,26 @@ type VisionAnalysis = {
 type WebEnrichment = Partial<VisionAnalysis> & {
   web_sources?: string[] | null
   web_notes?: string | null
+  /** Volle https-URLs zu Handbüchern, Datenblättern, Support-PDFs (Websuche) */
+  document_links?: string[] | null
+}
+
+function sanitizeHttpsUrls(raw: unknown, max = 8): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: string[] = []
+  for (const x of raw) {
+    if (typeof x !== 'string') continue
+    const u = x.trim()
+    if (!/^https:\/\//i.test(u)) continue
+    try {
+      const parsed = new URL(u)
+      if (parsed.protocol === 'https:') out.push(u)
+    } catch {
+      continue
+    }
+    if (out.length >= max) break
+  }
+  return out.length ? out : undefined
 }
 
 const VISION_PROMPT = `Du bist ein Experte für technische Hausinstallationen. Analysiere dieses Bild einer Anlage (Balkonkraftwerk, Heizung/Wärmepumpe, Filteranlage, etc.).
@@ -143,7 +163,13 @@ async function runWebEnrichment(
 
 ${hint}
 
-Nutze Websuche, um Hersteller, Modell, typische Leistungsdaten und ggf. Baujahr zu verifizieren oder zu ergänzen. Widerspricht das Web dem Befund, bevorzuge belastbare Web-Infos und erwähne das in web_notes.
+Nutze Websuche, um Hersteller und Modell zu verifizieren, ggf. Baujahr zu ergänzen und — besonders wichtig — offizielle Herstellerquellen zu finden.
+
+Priorisiere in document_links vollständige https-URLs zu: Bedienungsanleitungen, Montage-/Installationsanleitungen, Datenblättern (PDF), Produktseiten mit Download-Bereich, Support-Dokumentation. Nur verlässliche Quellen (Hersteller, Fachhändler mit direktem PDF-Link). Keine generischen Blog-Artikel ohne Dokument.
+
+Wenn keine sichere URL gefunden wird: document_links null oder leeres Array.
+
+Widerspricht das Web dem Befund, bevorzuge belastbare Web-Infos und erwähne das in web_notes.
 
 Gib NUR valides JSON zurück (kein Markdown):
 {
@@ -154,7 +180,8 @@ Gib NUR valides JSON zurück (kein Markdown):
   "capacity": string | null,
   "filter_type": string | null,
   "confidence": number (0-1),
-  "web_sources": string[] (kurze URLs oder Quellenbezeichner, max 5),
+  "document_links": string[] | null (nur vollständige https://… URLs, max 8, sonst []),
+  "web_sources": string[] (kurze Bezeichner oder URLs zur Einordnung, max 5),
   "web_notes": string | null
 }`
 
@@ -182,7 +209,11 @@ Gib NUR valides JSON zurück (kein Markdown):
   if (!text) return null
 
   try {
-    return parseJsonObject<WebEnrichment>(text)
+    const parsed = parseJsonObject<WebEnrichment>(text)
+    return {
+      ...parsed,
+      document_links: sanitizeHttpsUrls(parsed.document_links),
+    }
   } catch {
     console.warn('Web enrichment parse failed:', text.slice(0, 500))
     return null
@@ -192,7 +223,11 @@ Gib NUR valides JSON zurück (kein Markdown):
 function mergeVisionAndWeb(
   vision: VisionAnalysis,
   web: WebEnrichment | null,
-): VisionAnalysis & { web_sources?: string[]; web_notes?: string | null } {
+): VisionAnalysis & {
+  web_sources?: string[]
+  web_notes?: string | null
+  document_links?: string[]
+} {
   if (!web) {
     return { ...vision }
   }
@@ -202,6 +237,7 @@ function mergeVisionAndWeb(
     if (w !== undefined && w !== null && w !== '') return w as VisionAnalysis[K]
     return v
   }
+  const docLinks = sanitizeHttpsUrls(web.document_links) ?? sanitizeHttpsUrls(web.web_sources)
   return {
     category: pick('category'),
     manufacturer: pick('manufacturer'),
@@ -215,6 +251,7 @@ function mergeVisionAndWeb(
     ),
     web_sources: web.web_sources ?? undefined,
     web_notes: web.web_notes ?? null,
+    document_links: docLinks,
   }
 }
 
@@ -237,6 +274,7 @@ const DEMO_WEB: WebEnrichment = {
   filter_type: null,
   confidence: 0.88,
   web_sources: ['Hersteller-Datenblatt (Demo)', 'Fachhandel-Übersicht (Demo)'],
+  document_links: ['https://www.anker.com/de'],
   web_notes: 'Demo: XAI_API_KEY nicht gesetzt – keine Web-Ergänzung.',
 }
 

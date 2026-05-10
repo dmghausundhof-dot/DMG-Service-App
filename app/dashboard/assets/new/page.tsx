@@ -13,11 +13,13 @@ import {
   Sparkles,
   PencilLine,
   Save,
+  ExternalLink,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 const CATEGORIES = [
+  'Sonstiges',
   'Balkonkraftwerk',
   'Heizung',
   'Entsalzungsanlage',
@@ -25,7 +27,6 @@ const CATEGORIES = [
   'Filteranlage',
   'Wallbox',
   'Starlink',
-  'Sonstiges',
 ] as const
 
 type AnalysisFields = {
@@ -38,6 +39,7 @@ type AnalysisFields = {
   confidence?: number
   web_sources?: string[]
   web_notes?: string | null
+  document_links?: string[]
 }
 
 function applyMergedToForm(merged: AnalysisFields): {
@@ -46,7 +48,6 @@ function applyMergedToForm(merged: AnalysisFields): {
   manufacturer: string
   model: string
   year_built: string
-  capacity: string
   notes: string
 } {
   const y = merged.year_built
@@ -60,6 +61,11 @@ function applyMergedToForm(merged: AnalysisFields): {
   if (merged.web_notes) parts.push(merged.web_notes)
   if (merged.web_sources?.length) {
     parts.push(`Quellen: ${merged.web_sources.join(', ')}`)
+  }
+  if (merged.document_links?.length) {
+    parts.push('')
+    parts.push('Dokumente & Links (Websuche):')
+    for (const url of merged.document_links) parts.push(url)
   }
 
   const name = merged.model?.trim() || merged.manufacturer?.trim() || 'Neue Anlage'
@@ -75,7 +81,6 @@ function applyMergedToForm(merged: AnalysisFields): {
     manufacturer: merged.manufacturer?.trim() ?? '',
     model: merged.model?.trim() ?? '',
     year_built: yearStr,
-    capacity: merged.capacity?.trim() ?? '',
     notes: parts.join('\n'),
   }
 }
@@ -100,11 +105,10 @@ function NewAssetForm() {
 
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Balkonkraftwerk',
+    category: 'Sonstiges',
     manufacturer: '',
     model: '',
     year_built: '',
-    capacity: '',
     notes: '',
   })
 
@@ -283,7 +287,7 @@ function NewAssetForm() {
         manufacturer: formData.manufacturer.trim() || null,
         model: formData.model.trim() || null,
         year_built: Number.isFinite(y) ? y : null,
-        capacity: formData.capacity.trim() || null,
+        capacity: null,
         filter_type:
           mergedAnalysis && typeof mergedAnalysis.filter_type === 'string'
             ? mergedAnalysis.filter_type
@@ -486,13 +490,40 @@ function NewAssetForm() {
                   <span className="text-slate-500">Modell:</span>{' '}
                   <span className="text-slate-100">{mergedAnalysis.model || '—'}</span>
                 </div>
-                <div className="sm:col-span-2">
-                  <span className="text-slate-500">Leistung:</span>{' '}
-                  <span className="text-slate-100">{mergedAnalysis.capacity || '—'}</span>
-                </div>
               </div>
               {analysisMessage ? <p className="text-xs text-slate-500 mt-4">{analysisMessage}</p> : null}
             </div>
+
+            {mergedAnalysis.document_links && mergedAnalysis.document_links.length > 0 ? (
+              <details className="rounded-2xl border border-sky-900/50 bg-sky-950/25 text-sm open:border-sky-800/60">
+                <summary className="cursor-pointer list-none px-4 py-3 font-medium text-sky-200 [&::-webkit-details-marker]:hidden">
+                  <span className="inline-flex w-full items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-2">
+                      <ExternalLink className="h-4 w-4 shrink-0 text-sky-400" />
+                      Links aus Websuche ({mergedAnalysis.document_links.length})
+                    </span>
+                    <span className="text-xs font-normal text-slate-500">Tippen zum Anzeigen</span>
+                  </span>
+                </summary>
+                <ul className="space-y-2 border-t border-sky-900/40 px-4 pb-4 pt-3">
+                  {mergedAnalysis.document_links.map((url) => (
+                    <li key={url}>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="break-all text-emerald-400 hover:underline"
+                      >
+                        {url}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <p className="border-t border-sky-900/30 px-4 pb-3 pt-2 text-[11px] text-slate-500">
+                  Dieselben Links sind bei „Vorschlag übernehmen“ auch in den Notizen eingetragen.
+                </p>
+              </details>
+            ) : null}
 
             {(visionAnalysis || webEnrichment) && (
               <details className="rounded-2xl border border-slate-800 bg-slate-900/40 text-sm">
@@ -506,7 +537,9 @@ function NewAssetForm() {
                       <ul className="space-y-1 text-slate-400">
                         <li>H: {visionAnalysis.manufacturer || '—'}</li>
                         <li>M: {visionAnalysis.model || '—'}</li>
-                        <li>kW/kWh: {visionAnalysis.capacity || '—'}</li>
+                        {visionAnalysis.filter_type ? (
+                          <li>Filter: {visionAnalysis.filter_type}</li>
+                        ) : null}
                       </ul>
                     </div>
                   ) : null}
@@ -516,7 +549,11 @@ function NewAssetForm() {
                       <ul className="space-y-1 text-slate-400">
                         <li>H: {webEnrichment.manufacturer || '—'}</li>
                         <li>M: {webEnrichment.model || '—'}</li>
-                        <li>kW/kWh: {webEnrichment.capacity || '—'}</li>
+                        {Array.isArray(webEnrichment.document_links) && webEnrichment.document_links.length > 0 ? (
+                          <li className="pt-1 text-xs text-sky-300/95">
+                            Dokument-URLs: {webEnrichment.document_links.length}
+                          </li>
+                        ) : null}
                         {webEnrichment.web_sources?.length ? (
                           <li className="text-xs text-slate-500 pt-2">
                             {webEnrichment.web_sources.join(' · ')}
@@ -623,21 +660,16 @@ function NewAssetForm() {
           </div>
 
           <div>
-            <label className="text-sm text-slate-300 block mb-2">Leistung / Kapazität</label>
-            <input
-              value={formData.capacity}
-              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-              className="input w-full py-3"
-              placeholder="z. B. 5.2 kWp"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-slate-300 block mb-2">Notizen</label>
+            <label className="text-sm text-slate-300 block mb-2">
+              Notizen
+              <span className="block font-normal text-xs text-slate-500 mt-1">
+                Die KI trägt hier Konfidenz, Kurzinfos und gefundene Dokument-Links aus der Websuche ein (anpassbar).
+              </span>
+            </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="input w-full min-h-[100px] py-3"
+              className="input w-full min-h-[120px] py-3"
             />
           </div>
         </div>
