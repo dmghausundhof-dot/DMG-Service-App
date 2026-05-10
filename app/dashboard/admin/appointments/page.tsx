@@ -2,22 +2,29 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
-import { Calendar, Clock, AlertTriangle, CheckCircle, ArrowRight, User, Loader2, ImageIcon } from 'lucide-react'
+import {
+  Calendar,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  ArrowRight,
+  Loader2,
+  ImageIcon,
+  X,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  confirmAppointment, 
-  rejectAppointment, 
-  acceptReschedule, 
-  rejectReschedule, 
-  updateAdminNote 
+import {
+  confirmAppointment,
+  rejectAppointment,
+  rejectReschedule,
+  updateAdminNote,
 } from './actions'
 
 interface Appointment {
   id: string
   service_type: string
-  preferred_date: string
+  preferred_date: string | null
   time_window: string | null
-  urgency: string
   status: string
   description: string | null
   customer_notes: string | null
@@ -38,7 +45,49 @@ export default function AdminAppointmentsPage() {
   const [error, setError] = useState('')
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [scheduleAppt, setScheduleAppt] = useState<Appointment | null>(null)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleWindow, setScheduleWindow] = useState('')
   const supabase = createClient()
+
+  const openSchedule = (appt: Appointment) => {
+    setScheduleAppt(appt)
+    setScheduleDate(
+      appt.proposed_preferred_date?.slice(0, 10) ||
+        appt.preferred_date?.slice(0, 10) ||
+        new Date().toISOString().split('T')[0],
+    )
+    setScheduleWindow(appt.proposed_time_window || appt.time_window || '')
+    setScheduleOpen(true)
+  }
+
+  const submitSchedule = () => {
+    if (!scheduleAppt || !scheduleDate.trim()) {
+      alert('Bitte ein Datum wählen.')
+      return
+    }
+    const id = scheduleAppt.id
+    setPendingId(id)
+    startTransition(async () => {
+      try {
+        const result = await confirmAppointment(id, {
+          preferred_date: scheduleDate.trim(),
+          time_window: scheduleWindow.trim() || null,
+        })
+        if (result?.success) {
+          alert(result.message || 'Erfolgreich!')
+          setScheduleOpen(false)
+          setScheduleAppt(null)
+          fetchAppointments()
+        }
+      } catch (err: unknown) {
+        alert(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
+      } finally {
+        setPendingId(null)
+      }
+    })
+  }
 
   const fetchAppointments = async () => {
     setLoading(true)
@@ -59,7 +108,6 @@ export default function AdminAppointmentsPage() {
         service_type, 
         preferred_date, 
         time_window, 
-        urgency, 
         status, 
         description, 
         customer_notes,
@@ -72,7 +120,7 @@ export default function AdminAppointmentsPage() {
         objects (name, city)
       `)
       .in('status', ['requested', 'reschedule_requested'])
-      .order('preferred_date', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (fetchError) {
       setError(`Fehler beim Laden der Termine: ${fetchError.message}`)
@@ -158,7 +206,6 @@ export default function AdminAppointmentsPage() {
         <div className="space-y-6">
           {openRequests.map((appt) => {
             const isReschedule = appt.status === 'reschedule_requested'
-            const urgencyColor = appt.urgency === 'emergency' ? 'text-red-400' : appt.urgency === 'high' ? 'text-orange-400' : 'text-slate-400'
 
             return (
               <div key={appt.id} className="card p-8 hover:border-emerald-500/30 transition-all group">
@@ -175,32 +222,34 @@ export default function AdminAppointmentsPage() {
                             {isReschedule ? '🔄 Änderungswunsch' : '🆕 Neue Anfrage'}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-400">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(appt.preferred_date).toLocaleDateString('de-DE', { 
-                            weekday: 'long', 
-                            day: 'numeric', 
-                            month: 'long' 
-                          })}
-                          {appt.time_window && (
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+                          <Calendar className="w-4 h-4 shrink-0" />
+                          {appt.preferred_date ? (
                             <>
-                              <span className="mx-1">•</span>
-                              <Clock className="w-4 h-4" /> {appt.time_window}
+                              {new Date(appt.preferred_date).toLocaleDateString('de-DE', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long',
+                              })}
+                              {appt.time_window && (
+                                <>
+                                  <span className="mx-1">•</span>
+                                  <Clock className="w-4 h-4" /> {appt.time_window}
+                                </>
+                              )}
                             </>
+                          ) : (
+                            <span className="text-amber-400/90">
+                              Noch kein Termin gesetzt – beim Bestätigen Datum &amp; Zeit eintragen
+                            </span>
                           )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-6">
-                      <div>
-                        <div className="text-xs text-slate-500 mb-1">OBJEKT</div>
-                        <div className="font-medium">{appt.objects?.name} {appt.objects?.city && `• ${appt.objects.city}`}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-500 mb-1">DRINGLICHKEIT</div>
-                        <div className={`font-medium ${urgencyColor}`}>{appt.urgency === 'emergency' ? 'Notfall' : appt.urgency === 'high' ? 'Hoch' : 'Normal'}</div>
-                      </div>
+                    <div className="text-sm mb-6">
+                      <div className="text-xs text-slate-500 mb-1">OBJEKT</div>
+                      <div className="font-medium">{appt.objects?.name} {appt.objects?.city && `• ${appt.objects.city}`}</div>
                     </div>
 
                     {Array.isArray(appt.attachment_urls) && appt.attachment_urls.length > 0 && (
@@ -237,13 +286,18 @@ export default function AdminAppointmentsPage() {
                     
                     {appt.status === 'requested' && (
                       <>
-                        <button 
-                          onClick={() => handleAction(() => confirmAppointment(appt.id), appt.id)}
+                        <button
+                          type="button"
+                          onClick={() => openSchedule(appt)}
                           disabled={pendingId === appt.id}
                           className="w-full btn-primary py-3 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          {pendingId === appt.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} 
-                          Termin bestätigen
+                          {pendingId === appt.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                          Termin einplanen &amp; bestätigen
                         </button>
                         <button 
                           onClick={() => handleAction(() => rejectAppointment(appt.id), appt.id)}
@@ -258,13 +312,18 @@ export default function AdminAppointmentsPage() {
 
                     {isReschedule && (
                       <>
-                        <button 
-                          onClick={() => handleAction(() => acceptReschedule(appt.id), appt.id)}
+                        <button
+                          type="button"
+                          onClick={() => openSchedule(appt)}
                           disabled={pendingId === appt.id}
                           className="w-full btn-primary py-3 flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                          {pendingId === appt.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} 
-                          Änderung akzeptieren
+                          {pendingId === appt.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                          Neuen Termin setzen &amp; abschließen
                         </button>
                         <button 
                           onClick={() => handleAction(() => rejectReschedule(appt.id), appt.id)}
@@ -304,6 +363,97 @@ export default function AdminAppointmentsPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {scheduleOpen && scheduleAppt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="card w-full max-w-lg p-8 relative border border-emerald-900/40">
+            <button
+              type="button"
+              onClick={() => {
+                setScheduleOpen(false)
+                setScheduleAppt(null)
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              aria-label="Schließen"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="mb-6">
+              <div className="text-xs text-emerald-500 font-semibold tracking-widest mb-1">TERMIN PLANEN</div>
+              <h2 className="text-3xl font-semibold tracking-tight">Datum &amp; Zeitfenster</h2>
+              <p className="text-slate-400 mt-2 text-sm">
+                {scheduleAppt.service_type} • {scheduleAppt.objects?.name}
+                {scheduleAppt.objects?.city ? ` (${scheduleAppt.objects.city})` : ''}
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm text-slate-300 block mb-2">Datum *</label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="input w-full text-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm text-slate-300 block mb-2">Zeitfenster (optional)</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {[
+                    'Vormittag (08:00-12:00)',
+                    'Nachmittag (13:00-17:00)',
+                    '14:00-16:00',
+                  ].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setScheduleWindow(s)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-slate-700 text-slate-300 hover:border-emerald-700"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={scheduleWindow}
+                  onChange={(e) => setScheduleWindow(e.target.value)}
+                  className="input w-full min-h-[72px] text-sm"
+                  placeholder='z. B. "Zwischen 13 und 17 Uhr"'
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                type="button"
+                onClick={() => {
+                  setScheduleOpen(false)
+                  setScheduleAppt(null)
+                }}
+                className="btn-secondary flex-1 py-3.5"
+                disabled={pendingId === scheduleAppt.id}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={submitSchedule}
+                disabled={!scheduleDate.trim() || pendingId === scheduleAppt.id}
+                className="btn-primary flex-1 py-3.5 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {pendingId === scheduleAppt.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                Bestätigen
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

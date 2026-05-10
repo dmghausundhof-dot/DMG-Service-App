@@ -97,7 +97,7 @@ export default function LandingPage() {
             {
               icon: <Calendar className="w-7 h-7" />,
               title: "Termine & Wartung",
-              desc: "Einfach Termine für Wartung, Filterwechsel oder Reparatur buchen – mit Foto-Upload und Dringlichkeit."
+              desc: "Einfach Termine für Wartung, Filterwechsel oder Reparatur anfragen – mit optionalem Foto-Upload."
             },
             {
               icon: <Users className="w-7 h-7" />,

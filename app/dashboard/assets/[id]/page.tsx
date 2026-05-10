@@ -222,7 +222,6 @@ export default function AssetDetailPage() {
             service_type, 
             preferred_date, 
             time_window, 
-            urgency, 
             status, 
             description
           `)
@@ -795,7 +794,11 @@ export default function AssetDetailPage() {
                     return (
                       <tr key={appt.id} className="hover:bg-slate-900/50">
                         <td className="px-6 py-4 font-medium text-white">{appt.service_type}</td>
-                        <td className="px-6 py-4 text-slate-400">{new Date(appt.preferred_date).toLocaleDateString('de-DE')}</td>
+                        <td className="px-6 py-4 text-slate-400">
+                          {appt.preferred_date
+                            ? new Date(appt.preferred_date).toLocaleDateString('de-DE')
+                            : 'Noch offen'}
+                        </td>
                         <td className="px-6 py-4 text-slate-400">{appt.time_window || '—'}</td>
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.bg}`}>

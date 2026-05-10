@@ -13,9 +13,8 @@ const DMG_LOGO_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAB0ElEQVR
 interface Appointment {
   id: string
   service_type: string
-  preferred_date: string
+  preferred_date: string | null
   time_window: string | null
-  urgency: string
   status: string
   description: string | null
   customer_notes: string | null
@@ -44,17 +43,6 @@ function getStatusBadge(status: string) {
       return { label: 'Änderung angefragt', bg: 'bg-purple-600/20 text-purple-400 border-purple-900/50', icon: Clock }
     default:
       return { label: 'Angefragt', bg: 'bg-amber-600/20 text-amber-400 border-amber-900/50', icon: Calendar }
-  }
-}
-
-function getUrgencyBadge(urgency: string) {
-  switch (urgency) {
-    case 'emergency':
-      return { label: 'Notfall', bg: 'bg-red-600/20 text-red-400' }
-    case 'high':
-      return { label: 'Hoch', bg: 'bg-orange-600/20 text-orange-400' }
-    default:
-      return { label: 'Normal', bg: 'bg-slate-600/20 text-slate-400' }
   }
 }
 
@@ -91,7 +79,6 @@ export default function AppointmentsListPage() {
             service_type, 
             preferred_date, 
             time_window, 
-            urgency, 
             status, 
             description, 
             customer_notes, 
@@ -102,7 +89,7 @@ export default function AppointmentsListPage() {
             reschedule_reason
           `, { count: 'exact' })
           .in('object_id', idFilter)
-          .order('preferred_date', { ascending: true })
+          .order('created_at', { ascending: false })
           .limit(50)
 
         const rows = appointmentsData ?? []
@@ -122,8 +109,28 @@ export default function AppointmentsListPage() {
     loadAppointments()
   }, [supabase])
 
-  const upcoming = appointments.filter(a => a.status !== 'completed' && a.status !== 'cancelled' && new Date(a.preferred_date) >= new Date())
-  const overdue = appointments.filter(a => a.status !== 'completed' && a.status !== 'cancelled' && new Date(a.preferred_date) < new Date())
+  const todayYmd = new Date().toISOString().slice(0, 10)
+
+  const awaitingDate = appointments.filter(
+    (a) =>
+      a.status !== 'completed' &&
+      a.status !== 'cancelled' &&
+      (a.preferred_date == null || String(a.preferred_date).trim() === ''),
+  )
+
+  const upcoming = appointments.filter((a) => {
+    if (a.status === 'completed' || a.status === 'cancelled') return false
+    const pd = a.preferred_date?.trim()
+    if (!pd) return false
+    return pd >= todayYmd
+  })
+
+  const overdue = appointments.filter((a) => {
+    if (a.status === 'completed' || a.status === 'cancelled') return false
+    const pd = a.preferred_date?.trim()
+    if (!pd) return false
+    return pd < todayYmd
+  })
 
   const filteredAppointments = appointments.filter(appt => {
     if (!searchTerm.trim()) return true
@@ -152,7 +159,7 @@ export default function AppointmentsListPage() {
     const rowsPerPage = Math.floor(usableHeight / rowHeight)
     const totalPages = Math.max(1, Math.ceil(rowsToExport.length / rowsPerPage))
     
-    const colWidths = [50, 55, 35, 45, 45, 37]
+    const colWidths = [58, 62, 42, 52, 53]
     
     let currentPage = 1
     let yPos = margin + 3
@@ -179,7 +186,7 @@ export default function AppointmentsListPage() {
       yPos = 30
       
       // Table header
-      const headers = ['Service', 'Objekt', 'Datum', 'Zeitfenster', 'Status', 'Dringlichkeit']
+      const headers = ['Service', 'Objekt', 'Datum', 'Zeitfenster', 'Status']
       
       doc.setFillColor(16, 185, 129)
       doc.rect(margin, yPos, usableWidth, 6, 'F')
@@ -221,16 +228,16 @@ export default function AppointmentsListPage() {
       }
       
       const statusInfo = getStatusBadge(appt.status)
-      const urgencyInfo = getUrgencyBadge(appt.urgency)
       const objectInfo = appt.objects ? `${appt.objects.name}${appt.objects.city ? ' • ' + appt.objects.city : ''}` : '—'
       
       const rowData = [
         appt.service_type,
         objectInfo,
-        new Date(appt.preferred_date).toLocaleDateString('de-DE'),
+        appt.preferred_date
+          ? new Date(appt.preferred_date).toLocaleDateString('de-DE')
+          : 'Noch offen',
         appt.time_window || '—',
         statusInfo.label,
-        urgencyInfo.label
       ]
       
       if (index % 2 === 0) {
@@ -261,7 +268,8 @@ export default function AppointmentsListPage() {
           <div className="text-emerald-500 text-sm font-semibold tracking-[2px] mb-2">TERMINÜBERSICHT</div>
           <h1 className="text-5xl font-semibold tracking-tighter">Meine Termine</h1>
           <p className="text-xl text-slate-400 mt-2">
-            {upcoming.length} anstehend • {overdue.length} überfällig • {totalAppointments} gesamt
+            {awaitingDate.length} ohne Termindatum • {upcoming.length} geplant • {overdue.length} überfällig •{' '}
+            {totalAppointments} gesamt
           </p>
         </div>
         
@@ -350,9 +358,14 @@ export default function AppointmentsListPage() {
         <div className="space-y-4">
           {filteredAppointments.map((appt) => {
             const statusInfo = getStatusBadge(appt.status)
-            const urgencyInfo = getUrgencyBadge(appt.urgency)
             const StatusIcon = statusInfo.icon
-            const isOverdue = appt.status !== 'completed' && appt.status !== 'cancelled' && new Date(appt.preferred_date) < new Date()
+            const pd = appt.preferred_date?.trim()
+            const isOverdue =
+              appt.status !== 'completed' &&
+              appt.status !== 'cancelled' &&
+              Boolean(pd) &&
+              pd! < todayYmd
+            const noDateYet = !pd
 
             return (
               <div key={appt.id} className="card p-6 hover:border-emerald-500/50 transition-all group">
@@ -377,28 +390,27 @@ export default function AppointmentsListPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <div className={`px-3 py-1 rounded-full text-xs font-medium border ${urgencyInfo.bg}`}>
-                          {urgencyInfo.label}
-                        </div>
-                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.bg}`}>
-                          <StatusIcon className="w-3.5 h-3.5" />
-                          {statusInfo.label}
-                        </div>
+                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusInfo.bg}`}>
+                        <StatusIcon className="w-3.5 h-3.5" />
+                        {statusInfo.label}
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-slate-400 mb-3">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-4 h-4" />
-                        {new Date(appt.preferred_date).toLocaleDateString('de-DE', { 
-                          weekday: 'short', 
-                          day: 'numeric', 
-                          month: 'short',
-                          year: 'numeric'
-                        })}
+                        {noDateYet ? (
+                          <span className="text-amber-400/95">Termindatum durch DMG – noch nicht festgelegt</span>
+                        ) : (
+                          new Date(pd!).toLocaleDateString('de-DE', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        )}
                       </div>
-                      {appt.time_window && (
+                      {appt.time_window && !noDateYet && (
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-4 h-4" />
                           {appt.time_window}

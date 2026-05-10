@@ -3,13 +3,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export async function confirmAppointment(appointmentId: string) {
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+export async function confirmAppointment(
+  appointmentId: string,
+  schedule: { preferred_date: string; time_window?: string | null },
+) {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Nicht angemeldet')
 
-  // Optional: Check if user is admin (we'll add proper check later)
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -20,18 +24,43 @@ export async function confirmAppointment(appointmentId: string) {
     throw new Error('Keine Admin-Berechtigung')
   }
 
+  const d = schedule.preferred_date?.trim()
+  if (!d || !DATE_RE.test(d)) {
+    throw new Error('Bitte ein gültiges Datum auswählen.')
+  }
+
+  const { data: row, error: readErr } = await supabase
+    .from('appointments')
+    .select('id, status')
+    .eq('id', appointmentId)
+    .single()
+
+  if (readErr || !row) {
+    throw new Error('Termin nicht gefunden')
+  }
+
+  if (!['requested', 'reschedule_requested'].includes(row.status)) {
+    throw new Error('Termin kann in diesem Status nicht eingeplant werden.')
+  }
+
   const { error } = await supabase
     .from('appointments')
-    .update({ 
+    .update({
       status: 'confirmed',
-      updated_at: new Date().toISOString()
+      preferred_date: d,
+      time_window: schedule.time_window?.trim() || null,
+      proposed_preferred_date: null,
+      proposed_time_window: null,
+      reschedule_reason: null,
+      reschedule_requested_at: null,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', appointmentId)
 
-  if (error) throw new Error(`Fehler beim Bestätigen: ${error.message}`)
+  if (error) throw new Error(`Fehler beim Einplanen: ${error.message}`)
 
   revalidatePath('/dashboard/admin/appointments')
-  return { success: true, message: 'Termin erfolgreich bestätigt!' }
+  return { success: true, message: 'Termin eingeplant und bestätigt.' }
 }
 
 export async function rejectAppointment(appointmentId: string) {

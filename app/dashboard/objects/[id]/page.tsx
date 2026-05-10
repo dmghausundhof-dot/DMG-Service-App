@@ -488,7 +488,9 @@ export default function ObjectDetailPage() {
                     <div>
                       <div className="font-semibold">{appt.service_type}</div>
                       <div className="text-sm text-slate-400">
-                        {new Date(appt.preferred_date).toLocaleDateString('de-DE')}
+                        {appt.preferred_date
+                          ? new Date(appt.preferred_date).toLocaleDateString('de-DE')
+                          : 'Termin noch offen'}
                       </div>
                     </div>
                     <div className={`px-2 py-0.5 rounded text-xs font-medium ${

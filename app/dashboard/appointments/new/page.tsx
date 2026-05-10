@@ -42,9 +42,6 @@ function NewAppointmentForm() {
   const [formData, setFormData] = useState({
     object_id: '',
     service_type: 'Wartung',
-    preferred_date: '',
-    time_window: '',
-    urgency: 'normal',
     description: '',
     customer_notes: '',
   })
@@ -141,11 +138,6 @@ function NewAppointmentForm() {
       setError('Bitte wählen Sie ein Objekt aus.')
       return
     }
-    if (!formData.preferred_date) {
-      setError('Bitte geben Sie ein Wunschdatum an.')
-      return
-    }
-
     setIsSaving(true)
     setError('')
 
@@ -164,9 +156,8 @@ function NewAppointmentForm() {
         .insert({
           object_id: formData.object_id,
           service_type: formData.service_type,
-          preferred_date: formData.preferred_date,
-          time_window: formData.time_window || null,
-          urgency: formData.urgency,
+          preferred_date: null,
+          time_window: null,
           description: formData.description || null,
           customer_notes: formData.customer_notes || null,
           status: 'requested',
@@ -252,21 +243,6 @@ function NewAppointmentForm() {
     'Sonstiges',
   ]
 
-  const urgencyOptions = [
-    { value: 'normal', label: 'Normal' },
-    { value: 'high', label: 'Hoch' },
-    { value: 'emergency', label: 'Notfall' },
-  ]
-
-  const timeWindowOptions = [
-    'Vormittag (08:00-12:00)',
-    'Nachmittag (13:00-17:00)',
-    '14:00-16:00',
-    '09:00-11:00',
-    '16:00-18:00',
-    'Anderes (bitte im Feld angeben)',
-  ]
-
   if (loadingObjects) {
     return (
       <div className="max-w-3xl mx-auto p-8 flex justify-center">
@@ -315,7 +291,7 @@ function NewAppointmentForm() {
           <div>
             <h1 className="text-4xl sm:text-5xl font-semibold tracking-tighter">Neuen Termin anfragen</h1>
             <p className="text-lg sm:text-xl text-slate-400 mt-2">
-              Optional Fotos anhängen (z. B. Anlage, Fehlerbild, Aufstellort).
+              DMG plant Datum und Zeit; optional Fotos anhängen (z. B. Anlage, Fehler).
             </p>
           </div>
         </div>
@@ -470,73 +446,10 @@ function NewAppointmentForm() {
             </select>
           </div>
 
-          <div>
-            <label className="text-sm text-slate-300 block mb-2">Wunschdatum *</label>
-            <input
-              type="date"
-              name="preferred_date"
-              value={formData.preferred_date}
-              onChange={handleInputChange}
-              min={new Date().toISOString().split('T')[0]}
-              className="input w-full text-lg"
-              required
-            />
-            <p className="text-xs text-slate-500 mt-1.5">Frühestmöglich: heute</p>
-          </div>
-
-          <div>
-            <label className="text-sm text-slate-300 block mb-2">Gewünschtes Zeitfenster</label>
-            <select
-              name="time_window"
-              value={formData.time_window}
-              onChange={handleInputChange}
-              className="input w-full text-lg mb-3"
-            >
-              <option value="">-- Bitte wählen (optional) --</option>
-              {timeWindowOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              name="time_window"
-              value={formData.time_window}
-              onChange={handleInputChange}
-              placeholder="Oder freies Zeitfenster eingeben (z.B. 14:00-16:00)"
-              className="input w-full text-lg"
-            />
-            <p className="text-xs text-slate-500 mt-1.5">
-              DMG Service passt sich gerne an – 2-Stunden-Fenster empfohlen
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-5">
+            <p className="text-sm text-slate-300 leading-relaxed">
+              <strong className="text-white">Zeitpunkt:</strong> Sie schlagen hier keinen Termin mehr vor – nach Ihrer Anfrage plant DMG das passende Datum und Zeitfenster und sagt diese per E-Mail, WhatsApp oder im Portal zu. Allgemeine Wünsche (z. B. „nach 17 Uhr“) können Sie unten unter Notizen eintragen.
             </p>
-          </div>
-
-          <div>
-            <label className="text-sm text-slate-300 block mb-2">Dringlichkeit</label>
-            <div className="flex flex-wrap gap-3">
-              {urgencyOptions.map((opt) => (
-                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="urgency"
-                    value={opt.value}
-                    checked={formData.urgency === opt.value}
-                    onChange={handleInputChange}
-                    className="accent-emerald-500"
-                  />
-                  <span
-                    className={`px-4 py-2 rounded-2xl text-sm font-medium border ${
-                      formData.urgency === opt.value
-                        ? 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50'
-                        : 'bg-slate-800 text-slate-400 border-slate-700'
-                    }`}
-                  >
-                    {opt.label}
-                  </span>
-                </label>
-              ))}
-            </div>
           </div>
 
           <div>
@@ -571,7 +484,7 @@ function NewAppointmentForm() {
           <button
             type="button"
             onClick={createAppointment}
-            disabled={isSaving || !formData.object_id || !formData.preferred_date}
+            disabled={isSaving || !formData.object_id}
             className="btn-primary flex-1 py-3.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? (
@@ -591,7 +504,7 @@ function NewAppointmentForm() {
         </div>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          DMG Service bestätigt Ihren Termin in der Regel innerhalb von 24 Stunden per E-Mail oder WhatsApp.
+          DMG meldet sich in der Regel innerhalb von 24 Stunden mit einem konkreten Terminvorschlag oder Rückfragen.
         </p>
       </div>
     </div>

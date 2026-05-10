@@ -50,6 +50,7 @@ export default async function DashboardOverview() {
     .from('appointments')
     .select('*', { count: 'exact', head: true })
     .in('object_id', objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000'])
+    .not('preferred_date', 'is', null)
     .gte('preferred_date', today)
     .not('status', 'eq', 'completed')
 
@@ -165,7 +166,13 @@ export default async function DashboardOverview() {
           {objects.length > 0 ? (
             objects.map((obj) => {
               const objAssets = assets.filter(a => a.object_id === obj.id)
-              const objAppointments = appointments.filter(a => a.object_id === obj.id && a.status !== 'completed' && new Date(a.preferred_date) >= new Date(today))
+              const objAppointments = appointments.filter(
+                (a) =>
+                  a.object_id === obj.id &&
+                  a.status !== 'completed' &&
+                  a.preferred_date != null &&
+                  String(a.preferred_date) >= today,
+              )
               const nextMaint = objAssets
                 .filter(a => a.next_maintenance_due)
                 .sort((a, b) => new Date(a.next_maintenance_due!).getTime() - new Date(b.next_maintenance_due!).getTime())[0]

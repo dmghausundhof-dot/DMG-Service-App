@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Loader2
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import DeleteConfirmation from '@/components/DeleteConfirmation'
+import { AppointmentCalendarExports } from '@/components/AppointmentCalendarExports'
 
 interface AttachmentMeta {
   url: string
@@ -23,9 +24,8 @@ type CustomerProfileEmbed = {
 interface Appointment {
   id: string
   service_type: string
-  preferred_date: string
+  preferred_date: string | null
   time_window: string | null
-  urgency: string
   status: string
   description: string | null
   customer_notes: string | null
@@ -88,17 +88,6 @@ function getStatusBadge(status: string) {
   }
 }
 
-function getUrgencyBadge(urgency: string) {
-  switch (urgency) {
-    case 'emergency':
-      return { label: 'Notfall', bg: 'bg-red-600/20 text-red-400' }
-    case 'high':
-      return { label: 'Hoch', bg: 'bg-orange-600/20 text-orange-400' }
-    default:
-      return { label: 'Normal', bg: 'bg-slate-600/20 text-slate-400' }
-  }
-}
-
 export default function AppointmentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -114,8 +103,6 @@ export default function AppointmentDetailPage() {
   const [showCancelModal, setShowCancelModal] = useState(false)
 
   // Reschedule form
-  const [newDate, setNewDate] = useState('')
-  const [newTimeWindow, setNewTimeWindow] = useState('')
   const [rescheduleReason, setRescheduleReason] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -180,8 +167,8 @@ export default function AppointmentDetailPage() {
   }, [id, router, supabase])
 
   const handleReschedule = async () => {
-    if (!appointment || !newDate || !rescheduleReason.trim()) {
-      alert('Bitte Datum und Begründung angeben.')
+    if (!appointment || !rescheduleReason.trim()) {
+      alert('Bitte eine kurze Begründung angeben.')
       return
     }
 
@@ -192,8 +179,8 @@ export default function AppointmentDetailPage() {
         .from('appointments')
         .update({
           status: 'reschedule_requested',
-          proposed_preferred_date: newDate,
-          proposed_time_window: newTimeWindow || null,
+          proposed_preferred_date: null,
+          proposed_time_window: null,
           reschedule_reason: rescheduleReason.trim(),
           reschedule_requested_at: new Date().toISOString()
         })
@@ -201,9 +188,8 @@ export default function AppointmentDetailPage() {
 
       if (error) throw error
 
-      alert('✅ Änderungsanfrage wurde erfolgreich gesendet! DMG Service wird sich bei Ihnen melden.')
+      alert('✅ Änderungswunsch wurde gesendet. DMG Service meldet sich mit einem Alternativtermin.')
 
-      // Refresh data
       const { data: updated } = await supabase
         .from('appointments')
         .select(APPOINTMENT_DETAIL_SELECT)
@@ -213,8 +199,6 @@ export default function AppointmentDetailPage() {
       if (updated) setAppointment(updated as Appointment)
 
       setShowRescheduleModal(false)
-      setNewDate('')
-      setNewTimeWindow('')
       setRescheduleReason('')
     } catch (err: any) {
       console.error(err)
@@ -309,13 +293,17 @@ export default function AppointmentDetailPage() {
 
   const statusInfo = getStatusBadge(appointment.status)
   const StatusIcon = statusInfo.icon
-  const urgencyInfo = getUrgencyBadge(appointment.urgency)
   const attachments = parseAttachments(appointment.attachment_urls)
 
   const isRescheduleRequested = appointment.status === 'reschedule_requested'
   const canModify = !['completed', 'cancelled'].includes(appointment.status)
   const canModifyClient = canModify && !viewerIsAdmin
   const customerProf = embeddedCustomerProfile(appointment.objects)
+  const hasScheduledDate = Boolean(appointment.preferred_date?.trim())
+  const canRequestReschedule =
+    canModifyClient &&
+    hasScheduledDate &&
+    ['confirmed', 'rescheduled'].includes(appointment.status)
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -344,13 +332,17 @@ export default function AppointmentDetailPage() {
 
         {canModifyClient && (
           <div className="flex flex-wrap gap-3 shrink-0">
-            <button 
-              onClick={() => setShowRescheduleModal(true)}
-              className="btn-secondary flex items-center gap-2 px-6 py-3"
-            >
-              <Edit2 className="w-4 h-4" /> Termin ändern
-            </button>
-            <button 
+            {canRequestReschedule ? (
+              <button
+                type="button"
+                onClick={() => setShowRescheduleModal(true)}
+                className="btn-secondary flex items-center gap-2 px-6 py-3"
+              >
+                <Edit2 className="w-4 h-4" /> Termin ändern
+              </button>
+            ) : null}
+            <button
+              type="button"
               onClick={() => setShowCancelModal(true)}
               className="px-6 py-3 border border-red-900/50 text-red-400 hover:bg-red-950/50 hover:text-red-300 rounded-2xl transition flex items-center gap-2"
             >
@@ -389,15 +381,15 @@ export default function AppointmentDetailPage() {
             <div className="flex-1">
               <h3 className="font-semibold text-lg text-purple-400 mb-1">Änderungsanfrage gesendet</h3>
               <p className="text-slate-400 mb-3">
-                Ihre Anfrage zur Terminverschiebung wurde an DMG Service übermittelt. Wir melden uns schnellstmöglich bei Ihnen.
+                DMG Service prüft Ihren Wunsch und schlägt Ihnen einen neuen Termin vor. Sie müssen kein Datum selbst vorschlagen.
               </p>
-              {appointment.proposed_preferred_date && (
+              {appointment.reschedule_reason ? (
                 <div className="text-sm bg-purple-950/50 p-3 rounded-xl mb-3">
-                  <div><strong>Gewünschtes Datum:</strong> {new Date(appointment.proposed_preferred_date).toLocaleDateString('de-DE')}</div>
-                  {appointment.proposed_time_window && <div><strong>Gewünschtes Zeitfenster:</strong> {appointment.proposed_time_window}</div>}
-                  {appointment.reschedule_reason && <div className="mt-1"><strong>Begründung:</strong> {appointment.reschedule_reason}</div>}
+                  <div>
+                    <strong>Ihre Angabe:</strong> {appointment.reschedule_reason}
+                  </div>
                 </div>
-              )}
+              ) : null}
               {canModifyClient ? (
                 <button 
                   type="button"
@@ -422,29 +414,30 @@ export default function AppointmentDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <div className="text-xs text-slate-500 mb-1.5">GEWÜNSCHTES DATUM</div>
-                <div className="text-2xl font-semibold">
-                  {new Date(appointment.preferred_date).toLocaleDateString('de-DE', { 
-                    weekday: 'long', 
-                    day: 'numeric', 
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </div>
+                <div className="text-xs text-slate-500 mb-1.5">TERMIN</div>
+                {hasScheduledDate ? (
+                  <div className="text-2xl font-semibold">
+                    {new Date(appointment.preferred_date!).toLocaleDateString('de-DE', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-lg text-amber-300/95 leading-snug">
+                    Noch offen – DMG Service teilt Ihnen Datum und Uhrzeit mit, sobald die Anfrage bearbeitet wurde.
+                  </div>
+                )}
               </div>
 
               <div>
                 <div className="text-xs text-slate-500 mb-1.5">ZEITFENSTER</div>
                 <div className="text-2xl font-semibold flex items-center gap-2">
                   <Clock className="w-6 h-6 text-emerald-500" />
-                  {appointment.time_window || 'Nicht angegeben'}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-slate-500 mb-1.5">DRINGLICHKEIT</div>
-                <div className={`inline-flex px-4 py-1.5 rounded-full text-sm font-medium border ${urgencyInfo.bg}`}>
-                  {urgencyInfo.label}
+                  {hasScheduledDate
+                    ? appointment.time_window || 'Nicht angegeben'
+                    : '—'}
                 </div>
               </div>
 
@@ -470,6 +463,22 @@ export default function AppointmentDetailPage() {
                 <p className="text-slate-300 italic">"{appointment.customer_notes}"</p>
               </div>
             )}
+
+            {hasScheduledDate &&
+              ['confirmed', 'rescheduled', 'in_progress', 'completed'].includes(appointment.status) && (
+                <div className="mt-8 pt-8 border-t border-slate-800">
+                  <AppointmentCalendarExports
+                    appointmentId={appointment.id}
+                    serviceType={appointment.service_type}
+                    preferredDate={appointment.preferred_date}
+                    timeWindow={appointment.time_window}
+                    locationLabel={
+                      [appointment.objects?.name, appointment.objects?.city].filter(Boolean).join(', ') || null
+                    }
+                    description={[appointment.description, appointment.customer_notes].filter(Boolean).join('\n\n') || null}
+                  />
+                </div>
+              )}
 
             {attachments.length > 0 && (
               <div className="mt-8 pt-8 border-t border-slate-800">
@@ -578,43 +587,13 @@ export default function AppointmentDetailPage() {
               </div>
               <div>
                 <h2 className="text-3xl font-semibold tracking-tight">Termin ändern</h2>
-                <p className="text-slate-400">Neuen Wunschtermin angeben</p>
+                <p className="text-slate-400">Datum und Uhrzeit legt DMG nach Ihrem Hinweis neu fest</p>
               </div>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="text-sm text-slate-300 block mb-2">Neues Datum *</label>
-                <input 
-                  type="date" 
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="input w-full text-lg"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-slate-300 block mb-2">Neues Zeitfenster</label>
-                <select 
-                  value={newTimeWindow}
-                  onChange={(e) => setNewTimeWindow(e.target.value)}
-                  className="input w-full"
-                >
-                  <option value="">-- Bitte wählen --</option>
-                  <option value="Vormittag (08:00-12:00)">Vormittag (08:00-12:00)</option>
-                  <option value="Nachmittag (13:00-17:00)">Nachmittag (13:00-17:00)</option>
-                  <option value="14:00-16:00">14:00-16:00</option>
-                  <option value="09:00-11:00">09:00-11:00</option>
-                  <option value="16:00-18:00">16:00-18:00</option>
-                  <option value="Anderes">Anderes (bitte im Grund angeben)</option>
-                </select>
-                <p className="text-xs text-slate-500 mt-1">Optional – aktuelles: {appointment.time_window || 'nicht angegeben'}</p>
-              </div>
-
-              <div>
-                <label className="text-sm text-slate-300 block mb-2">Begründung für die Änderung *</label>
+                <label className="text-sm text-slate-300 block mb-2">Warum brauchen Sie einen anderen Termin? *</label>
                 <textarea 
                   value={rescheduleReason}
                   onChange={(e) => setRescheduleReason(e.target.value)}
@@ -627,6 +606,7 @@ export default function AppointmentDetailPage() {
 
             <div className="flex gap-3 mt-8">
               <button 
+                type="button"
                 onClick={() => setShowRescheduleModal(false)}
                 disabled={isSubmitting}
                 className="btn-secondary flex-1 py-3.5"
@@ -634,8 +614,9 @@ export default function AppointmentDetailPage() {
                 Abbrechen
               </button>
               <button 
+                type="button"
                 onClick={handleReschedule}
-                disabled={!newDate || !rescheduleReason.trim() || isSubmitting}
+                disabled={!rescheduleReason.trim() || isSubmitting}
                 className="btn-primary flex-1 py-3.5 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
@@ -649,7 +630,7 @@ export default function AppointmentDetailPage() {
             </div>
 
             <p className="text-xs text-center text-slate-500 mt-4">
-              DMG Service bestätigt die neue Zeit in der Regel innerhalb von 24 Stunden.
+              Sie schlagen kein neues Datum vor – das Team meldet sich mit einem konkreten Alternativtermin.
             </p>
           </div>
         </div>
@@ -662,7 +643,7 @@ export default function AppointmentDetailPage() {
         onConfirm={handleCancel}
         title="Termin stornieren?"
         message="Der Termin wird endgültig storniert. Eine erneute Buchung ist jederzeit möglich."
-        itemName={`${appointment.service_type} am ${new Date(appointment.preferred_date).toLocaleDateString('de-DE')}`}
+        itemName={`${appointment.service_type}${hasScheduledDate ? ` (${new Date(appointment.preferred_date!).toLocaleDateString('de-DE')})` : ''}`}
         itemType="Termin"
         confirmButtonText="Ja, Termin stornieren"
       />
