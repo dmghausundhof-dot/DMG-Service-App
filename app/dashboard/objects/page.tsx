@@ -152,9 +152,9 @@ export default function ObjectsListPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-8 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-slate-400">Objekte werden geladen...</p>
+      <div className="mx-auto max-w-7xl px-4 py-12 text-center">
+        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
+        <p className="text-sm text-slate-400">Objekte werden geladen...</p>
       </div>
     )
   }
@@ -162,29 +162,27 @@ export default function ObjectsListPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+      <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between lg:mb-10">
         <div>
-          <div className="text-emerald-500 text-sm font-semibold tracking-[2px] mb-2">OBJEKTÜBERSICHT</div>
-          <h1 className="text-5xl font-semibold tracking-tighter">Meine Objekte</h1>
-          <p className="text-xl text-slate-400 mt-2">
+          <div className="mb-1.5 text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm sm:mb-2">OBJEKTÜBERSICHT</div>
+          <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Meine Objekte</h1>
+          <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
             {totalObjects} Immobilien • Verwalten Sie Häuser, Wohnungen und Ferienimmobilien
           </p>
         </div>
-        
-        <div className="flex items-center gap-3">
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           {objects.length > 0 && (
-            <button 
+            <button
+              type="button"
               onClick={exportToPDF}
-              className="btn-secondary flex items-center gap-2 px-5 py-3 text-sm"
+              className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-auto"
             >
               📄 Als PDF exportieren
             </button>
           )}
-          <Link 
-            href="/dashboard/objects/new" 
-            className="btn-primary flex items-center gap-3 text-base px-8 py-4 w-fit"
-          >
-            <Plus className="w-5 h-5" />
+          <Link href="/dashboard/objects/new" className="btn-primary flex w-full items-center justify-center gap-2 sm:w-auto">
+            <Plus className="h-5 w-5 shrink-0" />
             Neues Objekt hinzufügen
           </Link>
         </div>
@@ -192,7 +190,7 @@ export default function ObjectsListPage() {
 
       {/* Search Bar */}
       {objects.length > 0 && (
-        <div className="mb-8">
+        <div className="mb-5 sm:mb-8">
           <div className="relative max-w-md">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
               <Search className="w-5 h-5" />
@@ -223,51 +221,45 @@ export default function ObjectsListPage() {
 
       {/* Empty State */}
       {objects.length === 0 ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <Home className="w-10 h-10 text-emerald-500" />
+        <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-800 sm:mb-6 sm:h-20 sm:w-20">
+            <Home className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-3xl font-semibold mb-4">Noch keine Objekte</h3>
-          <p className="text-xl text-slate-400 max-w-md mx-auto mb-8">
+          <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Noch keine Objekte</h3>
+          <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
             Legen Sie Ihr erstes Objekt an — z. B. Ihr Haus, die Wohnung oder die Ferienimmobilie.
           </p>
-          <Link 
-            href="/dashboard/objects/new" 
-            className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-lg"
-          >
-            <Plus className="w-5 h-5" />
+          <Link href="/dashboard/objects/new" className="btn-primary inline-flex items-center justify-center gap-2">
+            <Plus className="h-5 w-5 shrink-0" />
             Erstes Objekt anlegen
           </Link>
         </div>
       ) : filteredObjects.length === 0 && searchTerm ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <Search className="w-10 h-10 text-emerald-500" />
+        <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-800 sm:mb-6 sm:h-20 sm:w-20">
+            <Search className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-3xl font-semibold mb-4">Keine Treffer</h3>
-          <p className="text-xl text-slate-400 max-w-md mx-auto mb-8">
+          <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Keine Treffer</h3>
+          <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
             Keine Objekte gefunden für „{searchTerm}“. Versuchen Sie eine andere Suche.
           </p>
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="btn-secondary px-8 py-4 text-lg"
-          >
+          <button type="button" onClick={() => setSearchTerm('')} className="btn-secondary">
             Suche zurücksetzen
           </button>
         </div>
       ) : (
         /* Objects Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
           {filteredObjects.map((obj) => (
-            <div key={obj.id} className="card group overflow-hidden hover:border-emerald-500/50 transition-all flex flex-col">
-              <div className="p-6 flex-1">
+            <div key={obj.id} className="card group flex flex-col overflow-hidden transition-all hover:border-emerald-500/50">
+              <div className="flex-1 p-5 sm:p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 bg-emerald-600/10 rounded-2xl flex items-center justify-center">
                     <Home className="w-6 h-6 text-emerald-500" />
                   </div>
                 </div>
 
-                <h3 className="font-semibold text-2xl tracking-tight mb-2 group-hover:text-emerald-400 transition-colors">
+                <h3 className="mb-2 text-xl font-semibold tracking-tight transition-colors group-hover:text-emerald-400 sm:text-2xl">
                   {obj.name}
                 </h3>
 
@@ -285,7 +277,7 @@ export default function ObjectsListPage() {
                 )}
               </div>
 
-              <div className="px-6 pb-6 flex gap-3">
+              <div className="flex gap-2 px-5 pb-5 sm:gap-3 sm:px-6 sm:pb-6">
                 <Link 
                   href={`/dashboard/objects/${obj.id}`} 
                   className="flex-1 btn-secondary text-sm py-2.5 flex items-center justify-center gap-2"
@@ -304,7 +296,7 @@ export default function ObjectsListPage() {
         </div>
       )}
 
-      <div className="mt-8 text-center text-xs text-slate-500">
+      <div className="mt-6 text-center text-xs text-slate-500 sm:mt-8">
         Tipp: Klicken Sie auf ein Objekt, um Anlagen, Termine und Dokumente zu verwalten. • PDF-Export enthält alle Objekte mit Adresse und Notizen. Verwenden Sie die Suche für schnelle Filterung.
       </div>
     </div>

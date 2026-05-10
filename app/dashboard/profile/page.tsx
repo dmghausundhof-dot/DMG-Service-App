@@ -156,33 +156,33 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto p-8 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-slate-400">Profil wird geladen...</p>
+      <div className="mx-auto max-w-2xl px-4 py-12 text-center">
+        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
+        <p className="text-sm text-slate-400">Profil wird geladen...</p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-4">
-          <ArrowLeft className="w-4 h-4" /> Zurück zur Übersicht
+    <div className="mx-auto max-w-2xl">
+      <div className="mb-6 sm:mb-8">
+        <Link href="/dashboard" className="mb-3 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white sm:mb-4">
+          <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zur Übersicht
         </Link>
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-emerald-600/10 rounded-2xl flex items-center justify-center">
-            <User className="w-7 h-7 text-emerald-500" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600/10 sm:h-14 sm:w-14">
+            <User className="h-6 w-6 text-emerald-500 sm:h-7 sm:w-7" />
           </div>
-          <div>
-            <div className="text-emerald-500 text-sm font-semibold tracking-[2px]">PERSÖNLICHE DATEN</div>
-            <h1 className="text-5xl font-semibold tracking-tighter">Mein Profil</h1>
-            <p className="text-xl text-slate-400 mt-2">Kontaktdaten und Präferenzen verwalten</p>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm">PERSÖNLICHE DATEN</div>
+            <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Mein Profil</h1>
+            <p className="mt-1 text-base text-slate-400 sm:mt-2 sm:text-lg lg:text-xl">Kontaktdaten und Präferenzen verwalten</p>
           </div>
         </div>
       </div>
 
       {isAdmin && (
-        <div className="mb-8 card p-6 border border-emerald-800/50 bg-emerald-950/20">
+        <div className="card mb-6 border border-emerald-800/50 bg-emerald-950/20 p-4 sm:mb-8 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="text-xs font-semibold text-emerald-500 tracking-[2px] mb-1">ADMIN</div>
@@ -202,8 +202,8 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <div className="card p-8">
-        <form onSubmit={handleSave} className="space-y-6">
+      <div className="card p-5 sm:p-6 lg:p-8">
+        <form onSubmit={handleSave} className="space-y-5 sm:space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Vollständiger Name</label>
             <input 
@@ -257,11 +257,11 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <div className="pt-4 flex gap-4">
-            <button 
-              type="submit" 
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:gap-4">
+            <button
+              type="submit"
               disabled={saving}
-              className="btn-primary flex-1 flex items-center justify-center gap-2 py-4 text-base disabled:opacity-50"
+              className="btn-primary order-1 flex flex-1 items-center justify-center gap-2 py-3.5 disabled:opacity-50 sm:order-none sm:py-4"
             >
               {saving ? (
                 <>Wird gespeichert...</>
@@ -272,10 +272,7 @@ export default function ProfilePage() {
                 </>
               )}
             </button>
-            <Link 
-              href="/dashboard" 
-              className="btn-secondary flex-1 flex items-center justify-center py-4 text-base"
-            >
+            <Link href="/dashboard" className="btn-secondary order-2 flex flex-1 items-center justify-center py-3.5 sm:order-none sm:py-4">
               Abbrechen
             </Link>
           </div>
@@ -283,19 +280,19 @@ export default function ProfilePage() {
       </div>
 
       {/* Passwort ändern Section */}
-      <div className="mt-10">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 bg-emerald-600/10 rounded-2xl flex items-center justify-center">
-            <Lock className="w-7 h-7 text-emerald-500" />
+      <div className="mt-8 sm:mt-10">
+        <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600/10 sm:h-14 sm:w-14">
+            <Lock className="h-6 w-6 text-emerald-500 sm:h-7 sm:w-7" />
           </div>
-          <div>
-            <div className="text-emerald-500 text-sm font-semibold tracking-[2px]">SICHERHEIT</div>
-            <h2 className="text-4xl font-semibold tracking-tighter">Passwort ändern</h2>
-            <p className="text-xl text-slate-400 mt-1">Schützen Sie Ihr Konto mit einem starken Passwort</p>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm">SICHERHEIT</div>
+            <h2 className="text-2xl font-semibold tracking-tighter sm:text-3xl lg:text-4xl">Passwort ändern</h2>
+            <p className="mt-1 text-base text-slate-400 sm:text-lg">Schützen Sie Ihr Konto mit einem starken Passwort</p>
           </div>
         </div>
 
-        <div className="card p-8 max-w-2xl">
+        <div className="card max-w-2xl p-5 sm:p-6 lg:p-8">
           <form onSubmit={handlePasswordChange} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Aktuelles Passwort</label>
@@ -373,7 +370,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="card p-8 max-w-2xl">
+        <div className="card max-w-2xl p-5 sm:p-6 lg:p-8">
           <div className="space-y-6">
             <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl">
               <div className="flex items-center gap-3">

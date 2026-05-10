@@ -143,7 +143,7 @@ export default function DashboardShell({
       {/* Hauptbereich scrollt eigenständig, Header/Footer bleiben im Layout */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top Navbar */}
-        <header className="z-40 flex h-20 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950/95 px-6 backdrop-blur-md lg:px-10">
+        <header className="z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950/95 px-4 backdrop-blur-md sm:h-20 sm:px-6 lg:px-10">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Button */}
             <button 
@@ -181,17 +181,34 @@ export default function DashboardShell({
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto p-6 lg:p-10">
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4 pb-[5.75rem] md:px-6 md:py-6 lg:p-10 lg:pb-10">
           {children}
         </main>
 
-        <footer className="flex shrink-0 items-center justify-between border-t border-slate-800 bg-slate-900 px-6 py-4 text-xs text-slate-500">
-          <div>DMG Service • Wiesloch • Rhein-Neckar</div>
-          <div className="flex items-center gap-4">
-            <a href="tel:+49123456789" className="hover:text-emerald-400 transition">📞 0176 12345678</a>
-            <a href="https://wa.me/4917612345678" target="_blank" className="hover:text-emerald-400 transition">💬 WhatsApp</a>
+        <footer className="flex shrink-0 flex-col gap-1.5 border-t border-slate-800 bg-slate-900 px-4 py-2.5 text-[11px] leading-snug text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:px-6 sm:py-3 sm:text-xs">
+          <div className="truncate sm:truncate-none">DMG Service • Wiesloch • Rhein-Neckar</div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            <a
+              href="tel:+49123456789"
+              className="whitespace-nowrap hover:text-emerald-400 transition"
+              title="0176 12345678"
+            >
+              <span className="sm:hidden">📞 Anruf</span>
+              <span className="hidden sm:inline">📞 0176 12345678</span>
+            </a>
+            <a href="https://wa.me/4917612345678" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap hover:text-emerald-400 transition">
+              💬 WhatsApp
+            </a>
           </div>
         </footer>
+
+        <Link
+          href="/dashboard/appointments/new"
+          className="lg:hidden fixed z-30 bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] right-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-900/40 transition hover:bg-emerald-700 active:scale-[0.97]"
+          aria-label="Termin anfragen"
+        >
+          <Calendar className="h-6 w-6" aria-hidden />
+        </Link>
       </div>
 
       {/* Mobile Menu Overlay */}

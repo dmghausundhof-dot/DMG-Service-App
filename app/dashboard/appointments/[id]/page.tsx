@@ -268,24 +268,28 @@ export default function AppointmentDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto p-8 text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-500" />
-        <p className="mt-4 text-slate-400">Termin wird geladen...</p>
+      <div className="mx-auto max-w-5xl px-4 py-10 text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-500" />
+        <p className="mt-3 text-sm text-slate-400">Termin wird geladen...</p>
       </div>
     )
   }
 
   if (error || !appointment) {
     return (
-      <div className="max-w-5xl mx-auto p-8">
-        <Link href="/dashboard/appointments" className="flex items-center gap-2 text-slate-400 hover:text-white mb-6">
-          <ArrowLeft className="w-4 h-4" /> Zurück zu Terminen
+      <div className="mx-auto max-w-5xl px-4 py-4 sm:py-6">
+        <Link href="/dashboard/appointments" className="mb-5 flex items-center gap-2 text-slate-400 hover:text-white sm:mb-6">
+          <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Terminen
         </Link>
-        <div className="card p-12 text-center">
-          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-          <h1 className="text-3xl font-semibold mb-4">Termin nicht gefunden</h1>
-          <p className="text-slate-400 mb-8">{error || 'Der angeforderte Termin existiert nicht oder Sie haben keine Zugriffsberechtigung.'}</p>
-          <Link href="/dashboard/appointments" className="btn-primary">Zurück zur Übersicht</Link>
+        <div className="card p-6 text-center sm:p-10 lg:p-12">
+          <AlertTriangle className="mx-auto mb-5 h-14 w-14 text-red-500 sm:mb-6 sm:h-16 sm:w-16" />
+          <h1 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Termin nicht gefunden</h1>
+          <p className="mb-6 text-sm text-slate-400 sm:mb-8 sm:text-base">
+            {error || 'Der angeforderte Termin existiert nicht oder Sie haben keine Zugriffsberechtigung.'}
+          </p>
+          <Link href="/dashboard/appointments" className="btn-primary">
+            Zurück zur Übersicht
+          </Link>
         </div>
       </div>
     )
@@ -306,55 +310,57 @@ export default function AppointmentDetailPage() {
     ['confirmed', 'rescheduled'].includes(appointment.status)
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 mb-8">
-        <div>
+      <div className="mb-6 flex flex-col gap-5 sm:mb-8 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="min-w-0">
           <Link
             href={viewerIsAdmin ? '/dashboard/admin/appointments' : '/dashboard/appointments'}
-            className="flex items-center gap-2 text-slate-400 hover:text-white mb-2"
+            className="mb-2 flex items-center gap-2 text-sm text-slate-400 hover:text-white"
           >
-            <ArrowLeft className="w-4 h-4" />{' '}
+            <ArrowLeft className="h-4 w-4 shrink-0" />{' '}
             {viewerIsAdmin ? 'Zurück zu Admin-Anfragen' : 'Zurück zu Terminen'}
           </Link>
-          <h1 className="text-5xl font-semibold tracking-tighter flex items-center gap-4">
-            {appointment.service_type}
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium border ${statusInfo.bg}`}>
-              <StatusIcon className="w-4 h-4" />
+          <h1 className="flex flex-col items-start gap-3 text-3xl font-semibold tracking-tighter sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 lg:text-4xl xl:text-5xl">
+            <span className="min-w-0 break-words">{appointment.service_type}</span>
+            <div className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium sm:px-4 sm:py-1.5 sm:text-sm ${statusInfo.bg}`}>
+              <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               {statusInfo.label}
             </div>
           </h1>
-          <p className="text-xl text-slate-400 mt-2 flex items-center gap-2">
-            <MapPin className="w-5 h-5" />
-            {appointment.objects?.name} {appointment.objects?.city && `• ${appointment.objects.city}`}
+          <p className="mt-2 flex items-start gap-2 text-base text-slate-400 sm:items-center sm:text-lg lg:text-xl">
+            <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-slate-500 sm:mt-0" />
+            <span className="min-w-0 break-words">
+              {appointment.objects?.name} {appointment.objects?.city && `• ${appointment.objects.city}`}
+            </span>
           </p>
         </div>
 
         {canModifyClient && (
-          <div className="flex flex-wrap gap-3 shrink-0">
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
             {canRequestReschedule ? (
               <button
                 type="button"
                 onClick={() => setShowRescheduleModal(true)}
-                className="btn-secondary flex items-center gap-2 px-6 py-3"
+                className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-auto"
               >
-                <Edit2 className="w-4 h-4" /> Termin ändern
+                <Edit2 className="h-4 w-4 shrink-0" /> Termin ändern
               </button>
             ) : null}
             <button
               type="button"
               onClick={() => setShowCancelModal(true)}
-              className="px-6 py-3 border border-red-900/50 text-red-400 hover:bg-red-950/50 hover:text-red-300 rounded-2xl transition flex items-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-900/50 px-4 py-2.5 text-sm text-red-400 transition hover:bg-red-950/50 hover:text-red-300 sm:w-auto sm:px-6 sm:py-3 sm:text-base"
             >
-              <AlertTriangle className="w-4 h-4" /> Stornieren
+              <AlertTriangle className="h-4 w-4 shrink-0" /> Stornieren
             </button>
           </div>
         )}
       </div>
 
       {viewerIsAdmin && (
-        <div className="card p-5 mb-8 border border-amber-900/40 bg-amber-950/25 flex flex-wrap gap-4 items-start">
-          <Shield className="w-8 h-8 text-amber-400 shrink-0" />
+        <div className="card mb-6 flex flex-wrap items-start gap-3 border border-amber-900/40 bg-amber-950/25 p-4 sm:mb-8 sm:gap-4 sm:p-5">
+          <Shield className="h-7 w-7 shrink-0 text-amber-400 sm:h-8 sm:w-8" />
           <div className="flex-1 min-w-[220px] space-y-2">
             <div className="font-semibold text-amber-100">Admin-Ansicht</div>
             <p className="text-sm text-slate-400 leading-relaxed">
@@ -373,7 +379,7 @@ export default function AppointmentDetailPage() {
 
       {/* Reschedule Requested Banner */}
       {isRescheduleRequested && (
-        <div className="card p-6 mb-8 border-purple-900/50 bg-purple-950/20">
+        <div className="card mb-6 border-purple-900/50 bg-purple-950/20 p-4 sm:mb-8 sm:p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-purple-600/10 rounded-2xl flex items-center justify-center flex-shrink-0">
               <Clock className="w-6 h-6 text-purple-400" />
@@ -404,19 +410,19 @@ export default function AppointmentDetailPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
         {/* Main Info */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="card p-8">
-            <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-              <Calendar className="w-6 h-6 text-emerald-500" /> Termin Details
+        <div className="space-y-6 lg:col-span-2 lg:space-y-8">
+          <div className="card p-5 sm:p-6 lg:p-8">
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold sm:mb-6 sm:gap-3 sm:text-2xl">
+              <Calendar className="h-5 w-5 shrink-0 text-emerald-500 sm:h-6 sm:w-6" /> Termin Details
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6 lg:gap-8">
               <div>
-                <div className="text-xs text-slate-500 mb-1.5">TERMIN</div>
+                <div className="mb-1.5 text-xs text-slate-500">TERMIN</div>
                 {hasScheduledDate ? (
-                  <div className="text-2xl font-semibold">
+                  <div className="text-xl font-semibold sm:text-2xl">
                     {new Date(appointment.preferred_date!).toLocaleDateString('de-DE', {
                       weekday: 'long',
                       day: 'numeric',
@@ -432,9 +438,9 @@ export default function AppointmentDetailPage() {
               </div>
 
               <div>
-                <div className="text-xs text-slate-500 mb-1.5">ZEITFENSTER</div>
-                <div className="text-2xl font-semibold flex items-center gap-2">
-                  <Clock className="w-6 h-6 text-emerald-500" />
+                <div className="mb-1.5 text-xs text-slate-500">ZEITFENSTER</div>
+                <div className="flex items-center gap-2 text-xl font-semibold sm:text-2xl">
+                  <Clock className="h-5 w-5 shrink-0 text-emerald-500 sm:h-6 sm:w-6" />
                   {hasScheduledDate
                     ? appointment.time_window || 'Nicht angegeben'
                     : '—'}
@@ -451,14 +457,14 @@ export default function AppointmentDetailPage() {
             </div>
 
             {appointment.description && (
-              <div className="mt-8 pt-8 border-t border-slate-800">
+              <div className="mt-6 border-t border-slate-800 pt-6 sm:mt-8 sm:pt-8">
                 <div className="text-xs text-slate-500 mb-1.5">BESCHREIBUNG / NOTIZEN</div>
                 <p className="text-slate-300 whitespace-pre-wrap">{appointment.description}</p>
               </div>
             )}
 
             {appointment.customer_notes && (
-              <div className="mt-8 pt-8 border-t border-slate-800">
+              <div className="mt-6 border-t border-slate-800 pt-6 sm:mt-8 sm:pt-8">
                 <div className="text-xs text-slate-500 mb-1.5">IHRE NOTIZ</div>
                 <p className="text-slate-300 italic">"{appointment.customer_notes}"</p>
               </div>
@@ -466,7 +472,7 @@ export default function AppointmentDetailPage() {
 
             {hasScheduledDate &&
               ['confirmed', 'rescheduled', 'in_progress', 'completed'].includes(appointment.status) && (
-                <div className="mt-8 pt-8 border-t border-slate-800">
+                <div className="mt-6 border-t border-slate-800 pt-6 sm:mt-8 sm:pt-8">
                   <AppointmentCalendarExports
                     appointmentId={appointment.id}
                     serviceType={appointment.service_type}
@@ -481,7 +487,7 @@ export default function AppointmentDetailPage() {
               )}
 
             {attachments.length > 0 && (
-              <div className="mt-8 pt-8 border-t border-slate-800">
+              <div className="mt-6 border-t border-slate-800 pt-6 sm:mt-8 sm:pt-8">
                 <div className="text-xs text-slate-500 mb-3 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" /> ANGEHÄNGTE FOTOS ({attachments.length})
                 </div>
@@ -511,9 +517,9 @@ export default function AppointmentDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {viewerIsAdmin && customerProf ? (
-            <div className="card p-6 border border-slate-700/80">
+            <div className="card border border-slate-700/80 p-5 sm:p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <User className="w-5 h-5 text-sky-400" /> Kunde
               </h3>
@@ -541,11 +547,11 @@ export default function AppointmentDetailPage() {
             </div>
           ) : null}
 
-          <div className="card p-6">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-emerald-500" /> Objekt
+          <div className="card p-5 sm:p-6">
+            <h3 className="mb-3 flex items-center gap-2 font-semibold sm:mb-4">
+              <MapPin className="h-5 w-5 shrink-0 text-emerald-500" /> Objekt
             </h3>
-            <div className="text-lg font-medium">{appointment.objects?.name}</div>
+            <div className="text-base font-medium sm:text-lg">{appointment.objects?.name}</div>
             {appointment.objects?.city && (
               <div className="text-slate-400">{appointment.objects.city}</div>
             )}
@@ -557,7 +563,7 @@ export default function AppointmentDetailPage() {
             </Link>
           </div>
 
-          <div className="card p-6 text-sm text-slate-400">
+          <div className="card p-5 text-sm text-slate-400 sm:p-6">
             <div className="font-medium text-white mb-2">Hinweis</div>
             {viewerIsAdmin ? (
               <p>
@@ -573,20 +579,20 @@ export default function AppointmentDetailPage() {
       {/* Reschedule Modal */}
       {showRescheduleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="card w-full max-w-lg p-8 relative">
+          <div className="card relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto p-5 sm:p-8">
             <button 
               onClick={() => setShowRescheduleModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute right-3 top-3 text-slate-400 hover:text-white sm:right-4 sm:top-4"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
 
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-emerald-600/10 rounded-2xl flex items-center justify-center">
-                <Edit2 className="w-6 h-6 text-emerald-500" />
+            <div className="mb-5 flex items-center gap-3 sm:mb-6 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600/10 sm:h-12 sm:w-12">
+                <Edit2 className="h-5 w-5 text-emerald-500 sm:h-6 sm:w-6" />
               </div>
-              <div>
-                <h2 className="text-3xl font-semibold tracking-tight">Termin ändern</h2>
+              <div className="min-w-0 pr-8">
+                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Termin ändern</h2>
                 <p className="text-slate-400">Datum und Uhrzeit legt DMG nach Ihrem Hinweis neu fest</p>
               </div>
             </div>

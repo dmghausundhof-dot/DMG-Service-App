@@ -135,34 +135,34 @@ function AdminBusinessDocumentForm() {
 
   if (!allowed) {
     return (
-      <div className="max-w-3xl mx-auto py-20 text-center text-slate-400">
-        <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-emerald-500" />
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-slate-400 sm:text-base">
+        <Loader2 className="mx-auto mb-3 h-9 w-9 animate-spin text-emerald-500 sm:mb-4 sm:h-10 sm:w-10" />
         Zugriff wird geprüft…
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <Link href="/dashboard/documents" className="flex items-center gap-2 text-slate-400 hover:text-white mb-8">
-        <ArrowLeft className="w-4 h-4" /> Zurück zu Dokumenten
+    <div className="mx-auto max-w-3xl">
+      <Link href="/dashboard/documents" className="mb-5 flex items-center gap-2 text-slate-400 hover:text-white sm:mb-8">
+        <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Dokumenten
       </Link>
 
-      <div className="mb-8">
-        <h1 className="text-5xl font-semibold tracking-tighter mb-3">Beleg für Kunden</h1>
-        <p className="text-xl text-slate-400">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="mb-2 text-3xl font-semibold tracking-tighter sm:mb-3 sm:text-4xl lg:text-5xl">Beleg für Kunden</h1>
+        <p className="text-base text-slate-400 sm:text-lg lg:text-xl">
           Nur für den Betrieb: Belege und weitere Dokumente dem passenden Objekt zuordnen.
         </p>
       </div>
 
-      <div className="card p-8">
-        <div className="space-y-8">
+      <div className="card p-5 sm:p-6 lg:p-8">
+        <div className="space-y-6 sm:space-y-8">
           <div>
             <label className="text-sm text-slate-300 block mb-2">Kunden-Objekt *</label>
             <select
               value={selectedObjectId}
               onChange={(e) => setSelectedObjectId(e.target.value)}
-              className="input w-full text-lg"
+              className="input w-full text-base sm:text-lg"
               required
             >
               <option value="">— Objekt auswählen —</option>
@@ -192,7 +192,7 @@ function AdminBusinessDocumentForm() {
                   key={type.value}
                   type="button"
                   onClick={() => setDocumentType(type.value)}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                  className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 transition-all sm:gap-2 sm:p-4 ${
                     documentType === type.value
                       ? 'border-emerald-500 bg-emerald-600/10 text-emerald-400'
                       : 'border-slate-700 hover:border-slate-600 text-slate-400'
@@ -211,7 +211,7 @@ function AdminBusinessDocumentForm() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input w-full text-lg"
+              className="input w-full text-base sm:text-lg"
               placeholder="z. B. Rechnung Nr. 2026-048 – Wartung"
               required
             />
@@ -222,9 +222,9 @@ function AdminBusinessDocumentForm() {
             {!file ? (
               <div
                 onClick={() => document.getElementById('admin-file-upload')?.click()}
-                className="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-3xl p-12 text-center cursor-pointer bg-slate-900/50 transition"
+                className="cursor-pointer rounded-3xl border-2 border-dashed border-slate-700 bg-slate-900/50 px-4 py-8 text-center transition hover:border-emerald-500 sm:p-10 lg:p-12"
               >
-                <Upload className="mx-auto w-12 h-12 text-emerald-500 mb-4" />
+                <Upload className="mx-auto mb-3 h-10 w-10 text-emerald-500 sm:mb-4 sm:h-12 sm:w-12" />
                 <p className="font-medium mb-1">Datei auswählen</p>
                 <p className="text-sm text-slate-500">PDF, JPG oder PNG • max. 10 MB</p>
                 <input
@@ -261,12 +261,12 @@ function AdminBusinessDocumentForm() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-800 flex gap-4">
+        <div className="mt-6 flex flex-col gap-3 border-t border-slate-800 pt-6 sm:mt-8 sm:flex-row sm:gap-4">
           <button
             type="button"
             onClick={uploadDocument}
             disabled={isUploading || !selectedObjectId || !file || !title.trim()}
-            className="btn-primary flex-1 py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-50"
+            className="btn-primary order-1 flex flex-1 items-center justify-center gap-2 py-3.5 disabled:opacity-50 sm:gap-3 sm:py-4 sm:text-lg"
           >
             {isUploading ? (
               <>
@@ -282,7 +282,7 @@ function AdminBusinessDocumentForm() {
               'Beleg speichern'
             )}
           </button>
-          <Link href="/dashboard/documents" className="btn-secondary px-8 py-4 text-lg">
+          <Link href="/dashboard/documents" className="btn-secondary order-2 flex flex-1 justify-center py-3.5 text-center sm:flex-initial sm:px-8 sm:py-4 sm:text-lg">
             Abbrechen
           </Link>
         </div>

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import Image from 'next/image'
-import { House, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -36,61 +36,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+    <div className="flex min-h-[100dvh] min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-10 sm:px-6 sm:py-12">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex justify-center mb-10">
-          <Link href="/" className="flex items-center gap-3">
-            <Image 
-              src="/dmg-smart-house-logo.png" 
-              alt="DMG Service Logo" 
-              width={48} 
-              height={48} 
-              className="rounded-2xl" 
+        <div className="mb-6 flex justify-center sm:mb-8">
+          <Link href="/" className="flex max-w-full items-center gap-2 sm:gap-3">
+            <Image
+              src="/dmg-smart-house-logo.png"
+              alt="DMG Service Logo"
+              width={48}
+              height={48}
+              className="h-11 w-11 shrink-0 rounded-xl sm:h-12 sm:w-12 sm:rounded-2xl"
             />
-            <div>
-              <div className="font-semibold text-3xl tracking-tight">DMG Service</div>
-              <div className="text-xs text-slate-500 -mt-1">KUNDENPORTAL</div>
+            <div className="min-w-0 text-left">
+              <div className="truncate text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">DMG Service</div>
+              <div className="-mt-0.5 text-[10px] text-slate-500 sm:text-xs">KUNDENPORTAL</div>
             </div>
           </Link>
         </div>
 
-        <div className="card p-10">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-semibold tracking-tight">Willkommen zurück</h1>
-            <p className="text-slate-400 mt-3">Melden Sie sich in Ihrem Portal an</p>
+        <div className="card p-5 sm:p-8 lg:p-10">
+          <div className="mb-6 text-center sm:mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">Willkommen zurück</h1>
+            <p className="mt-2 text-sm text-slate-400 sm:mt-3 sm:text-base">Melden Sie sich in Ihrem Portal an</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">E-Mail-Adresse</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300 sm:mb-2">E-Mail-Adresse</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-600 rounded-2xl px-5 py-3.5 text-lg placeholder:text-slate-500 outline-none transition"
+                className="input w-full text-base sm:text-lg"
                 placeholder="max@mustermann.de"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Passwort</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300 sm:mb-2">Passwort</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-600 rounded-2xl px-5 py-3.5 text-lg placeholder:text-slate-500 outline-none transition pr-12"
+                  className="input w-full pr-12 text-base sm:text-lg"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
@@ -104,14 +105,14 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
+              className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 disabled:opacity-70 sm:py-4 sm:text-lg"
             >
               {loading ? 'Anmelden...' : 'Anmelden'}
-              {!loading && <ArrowRight className="w-5 h-5" />}
+              {!loading && <ArrowRight className="h-5 w-5 shrink-0" />}
             </button>
           </form>
 
-          <div className="text-center mt-8 text-sm text-slate-400">
+          <div className="mt-6 text-center text-sm text-slate-400 sm:mt-8">
             Noch kein Konto?{' '}
             <Link href="/register" className="text-emerald-500 hover:underline font-medium">
               Jetzt registrieren
@@ -119,7 +120,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-slate-500 mt-8">
+        <p className="mt-6 text-center text-[11px] text-slate-500 sm:mt-8 sm:text-xs">
           Probleme beim Anmelden? <a href="mailto:info@dmgservice.org" className="underline">Kontaktieren Sie uns</a>
         </p>
       </div>

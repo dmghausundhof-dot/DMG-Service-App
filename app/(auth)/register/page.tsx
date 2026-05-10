@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import Image from 'next/image'
-import { House, Eye, EyeOff, ArrowRight, Check } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
@@ -60,17 +60,17 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+      <div className="flex min-h-[100dvh] min-h-screen items-center justify-center bg-slate-950 px-4 py-10 sm:p-6 sm:py-12">
         <div className="max-w-md text-center">
-          <div className="w-20 h-20 bg-emerald-600/20 rounded-full flex items-center justify-center mx-auto mb-8">
-            <Check className="w-10 h-10 text-emerald-500" />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600/20 sm:mb-8 sm:h-20 sm:w-20">
+            <Check className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight mb-4">Fast geschafft!</h1>
-          <p className="text-xl text-slate-400 mb-8">
-            Wir haben Ihnen eine Bestätigungs-E-Mail an <span className="text-white">{email}</span> geschickt.<br />
-            Bitte bestätigen Sie Ihr Konto, um fortzufahren.
+          <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-3xl lg:text-4xl">Fast geschafft!</h1>
+          <p className="mb-6 text-base text-slate-400 sm:mb-8 sm:text-lg">
+            Wir haben Ihnen eine Bestätigungs-E-Mail an <span className="break-all text-white">{email}</span> geschickt.
+            <span className="mt-2 block">Bitte bestätigen Sie Ihr Konto, um fortzufahren.</span>
           </p>
-          <Link href="/login" className="btn-primary inline-flex items-center gap-2">
+          <Link href="/login" className="btn-primary inline-flex items-center justify-center gap-2">
             Zum Login
           </Link>
         </div>
@@ -79,57 +79,57 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+    <div className="flex min-h-[100dvh] min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-10 sm:px-6 sm:py-12">
       <div className="w-full max-w-md">
-        <div className="flex justify-center mb-10">
-          <Link href="/" className="flex items-center gap-3">
-            <Image 
-              src="/dmg-smart-house-logo.png" 
-              alt="DMG Service Logo" 
-              width={48} 
-              height={48} 
-              className="rounded-2xl" 
+        <div className="mb-6 flex justify-center sm:mb-8">
+          <Link href="/" className="flex max-w-full items-center gap-2 sm:gap-3">
+            <Image
+              src="/dmg-smart-house-logo.png"
+              alt="DMG Service Logo"
+              width={48}
+              height={48}
+              className="h-11 w-11 shrink-0 rounded-xl sm:h-12 sm:w-12 sm:rounded-2xl"
             />
-            <div>
-              <div className="font-semibold text-3xl tracking-tight">DMG Service</div>
-              <div className="text-xs text-slate-500 -mt-1">KUNDENPORTAL</div>
+            <div className="min-w-0 text-left">
+              <div className="truncate text-xl font-semibold tracking-tight sm:text-2xl lg:text-3xl">DMG Service</div>
+              <div className="-mt-0.5 text-[10px] text-slate-500 sm:text-xs">KUNDENPORTAL</div>
             </div>
           </Link>
         </div>
 
-        <div className="card p-10">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-semibold tracking-tight">Konto erstellen</h1>
-            <p className="text-slate-400 mt-3">Starten Sie in weniger als 2 Minuten</p>
+        <div className="card p-5 sm:p-8 lg:p-10">
+          <div className="mb-6 text-center sm:mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">Konto erstellen</h1>
+            <p className="mt-2 text-sm text-slate-400 sm:mt-3 sm:text-base">Starten Sie in weniger als 2 Minuten</p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-6">
+          <form onSubmit={handleRegister} className="space-y-5 sm:space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Vollständiger Name</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300 sm:mb-2">Vollständiger Name</label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-600 rounded-2xl px-5 py-3.5 text-lg placeholder:text-slate-500 outline-none transition"
+                className="input w-full text-base sm:text-lg"
                 placeholder="Max Mustermann"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">E-Mail-Adresse</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300 sm:mb-2">E-Mail-Adresse</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-600 rounded-2xl px-5 py-3.5 text-lg placeholder:text-slate-500 outline-none transition"
+                className="input w-full text-base sm:text-lg"
                 placeholder="max@mustermann.de"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Passwort</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300 sm:mb-2">Passwort</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -137,18 +137,19 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-600 rounded-2xl px-5 py-3.5 text-lg placeholder:text-slate-500 outline-none transition pr-12"
+                  className="input w-full pr-12 text-base sm:text-lg"
                   placeholder="Mindestens 6 Zeichen"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              <p className="text-xs text-slate-500 mt-1.5">Mindestens 6 Zeichen</p>
+              <p className="mt-1.5 text-xs text-slate-500">Mindestens 6 Zeichen</p>
             </div>
 
             {error && (
@@ -160,14 +161,14 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-2 disabled:opacity-70"
+              className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 disabled:opacity-70 sm:py-4 sm:text-lg"
             >
               {loading ? 'Konto wird erstellt...' : 'Kostenlos registrieren'}
-              {!loading && <ArrowRight className="w-5 h-5" />}
+              {!loading && <ArrowRight className="h-5 w-5 shrink-0" />}
             </button>
           </form>
 
-          <div className="text-center mt-8 text-sm text-slate-400">
+          <div className="mt-6 text-center text-sm text-slate-400 sm:mt-8">
             Bereits ein Konto?{' '}
             <Link href="/login" className="text-emerald-500 hover:underline font-medium">
               Anmelden
@@ -175,7 +176,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-slate-500 mt-8 max-w-xs mx-auto">
+        <p className="mx-auto mt-6 max-w-xs text-center text-[11px] text-slate-500 sm:mt-8 sm:text-xs">
           Mit der Registrierung stimmen Sie unseren Nutzungsbedingungen und der Datenschutzerklärung zu.
         </p>
       </div>

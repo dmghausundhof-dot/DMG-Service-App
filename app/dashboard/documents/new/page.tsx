@@ -105,29 +105,29 @@ function CustomerUploadForm() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <Link href="/dashboard/documents" className="flex items-center gap-2 text-slate-400 hover:text-white mb-8">
-        <ArrowLeft className="w-4 h-4" /> Zurück zu Dokumenten
+    <div className="mx-auto max-w-3xl">
+      <Link href="/dashboard/documents" className="mb-5 flex items-center gap-2 text-slate-400 hover:text-white sm:mb-8">
+        <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Dokumenten
       </Link>
 
-      <div className="mb-8">
-        <h1 className="text-5xl font-semibold tracking-tighter mb-3">Datei hochladen</h1>
-        <p className="text-xl text-slate-400">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="mb-2 text-3xl font-semibold tracking-tighter sm:mb-3 sm:text-4xl lg:text-5xl">Datei hochladen</h1>
+        <p className="text-base text-slate-400 sm:text-lg lg:text-xl">
           Bilder oder PDFs zu Ihrem Objekt – z. B. Fotos der Anlage, Verkabelung oder Herstellerdokumente.
         </p>
-        <p className="text-sm text-slate-500 mt-3">
+        <p className="mt-2 text-xs text-slate-500 sm:mt-3 sm:text-sm">
           Rechnungen, Angebote und Serviceberichte legt ausschließlich DMG Service im Admin-Bereich an.
         </p>
       </div>
 
-      <div className="card p-8">
-        <div className="space-y-8">
+      <div className="card p-5 sm:p-6 lg:p-8">
+        <div className="space-y-6 sm:space-y-8">
           <div>
             <label className="text-sm text-slate-300 block mb-2">Objekt *</label>
             <select
               value={selectedObjectId}
               onChange={(e) => setSelectedObjectId(e.target.value)}
-              className="input w-full text-lg"
+              className="input w-full text-base sm:text-lg"
               required
             >
               <option value="">— Objekt auswählen —</option>
@@ -148,7 +148,7 @@ function CustomerUploadForm() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input w-full text-lg"
+              className="input w-full text-base sm:text-lg"
               placeholder="z. B. Foto PV-Modul Dach Süd"
             />
           </div>
@@ -163,9 +163,9 @@ function CustomerUploadForm() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') document.getElementById('customer-file-upload')?.click()
                 }}
-                className="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-3xl p-12 text-center cursor-pointer bg-slate-900/50 transition"
+                className="cursor-pointer rounded-3xl border-2 border-dashed border-slate-700 bg-slate-900/50 px-4 py-8 text-center transition hover:border-emerald-500 sm:p-10 lg:p-12"
               >
-                <Upload className="mx-auto w-12 h-12 text-emerald-500 mb-4" />
+                <Upload className="mx-auto mb-3 h-10 w-10 text-emerald-500 sm:mb-4 sm:h-12 sm:w-12" />
                 <p className="font-medium mb-1">Datei auswählen</p>
                 <p className="text-sm text-slate-500">PDF oder Bild • max. 10 MB</p>
                 <input
@@ -202,12 +202,12 @@ function CustomerUploadForm() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-800 flex gap-4">
+        <div className="mt-6 flex flex-col gap-3 border-t border-slate-800 pt-6 sm:mt-8 sm:flex-row sm:gap-4">
           <button
             type="button"
             onClick={uploadDocument}
             disabled={isUploading || !selectedObjectId || !file}
-            className="btn-primary flex-1 py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-50"
+            className="btn-primary order-1 flex flex-1 items-center justify-center gap-2 py-3.5 disabled:opacity-50 sm:gap-3 sm:py-4 sm:text-lg"
           >
             {isUploading ? (
               <>
@@ -223,7 +223,7 @@ function CustomerUploadForm() {
               'Datei senden'
             )}
           </button>
-          <Link href="/dashboard/documents" className="btn-secondary px-8 py-4 text-lg">
+          <Link href="/dashboard/documents" className="btn-secondary order-2 flex flex-1 justify-center py-3.5 text-center sm:flex-initial sm:px-8 sm:py-4 sm:text-lg">
             Abbrechen
           </Link>
         </div>

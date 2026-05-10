@@ -155,19 +155,21 @@ export default function AdminAppointmentsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-8 text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-500" />
-        <p className="mt-4 text-slate-400">Lade offene Anfragen...</p>
+      <div className="mx-auto max-w-7xl px-4 py-12 text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-500" />
+        <p className="mt-3 text-sm text-slate-400">Lade offene Anfragen...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto p-8 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-red-400">{error}</p>
-        <button onClick={fetchAppointments} className="mt-4 btn-secondary">Erneut versuchen</button>
+      <div className="mx-auto max-w-7xl px-4 py-10 text-center">
+        <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-red-500" />
+        <p className="text-sm text-red-400 sm:text-base">{error}</p>
+        <button type="button" onClick={fetchAppointments} className="btn-secondary mt-4">
+          Erneut versuchen
+        </button>
       </div>
     )
   }
@@ -175,47 +177,44 @@ export default function AdminAppointmentsPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+      <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between lg:mb-10">
         <div>
-          <div className="text-emerald-500 text-sm font-semibold tracking-[2px] mb-2">ADMIN BEREICH</div>
-          <h1 className="text-5xl font-semibold tracking-tighter">Offene Anfragen</h1>
-          <p className="text-xl text-slate-400 mt-2">
+          <div className="mb-1.5 text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm sm:mb-2">ADMIN BEREICH</div>
+          <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Offene Anfragen</h1>
+          <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
             {openRequests.length} offene Terminanfragen • Bestätigen, Verschieben oder Ablehnen
           </p>
         </div>
-        
-        <Link 
-          href="/dashboard" 
-          className="btn-secondary flex items-center gap-2 px-6 py-3 text-sm w-fit"
-        >
+
+        <Link href="/dashboard" className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-fit">
           ← Zurück zum Dashboard
         </Link>
       </div>
 
       {openRequests.length === 0 ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 bg-emerald-600/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-emerald-500" />
+        <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600/10 sm:mb-6 sm:h-20 sm:w-20">
+            <CheckCircle className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-3xl font-semibold mb-4">Alles erledigt!</h3>
-          <p className="text-xl text-slate-400 max-w-md mx-auto">
+          <h3 className="mb-3 text-2xl font-semibold sm:text-3xl">Alles erledigt!</h3>
+          <p className="mx-auto max-w-md text-base text-slate-400 sm:text-lg">
             Es gibt derzeit keine offenen Terminanfragen oder Änderungswünsche.
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {openRequests.map((appt) => {
             const isReschedule = appt.status === 'reschedule_requested'
 
             return (
-              <div key={appt.id} className="card p-8 hover:border-emerald-500/30 transition-all group">
-                <div className="flex flex-col lg:flex-row lg:items-start gap-8">
+              <div key={appt.id} className="card p-5 transition-all group hover:border-emerald-500/30 sm:p-6 lg:p-8">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-8">
                   {/* Main Info */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-2xl tracking-tight group-hover:text-emerald-400 transition-colors">
+                          <h3 className="text-xl font-semibold tracking-tight transition-colors group-hover:text-emerald-400 sm:text-2xl">
                             {appt.service_type}
                           </h3>
                           <div className={`px-3 py-1 rounded-full text-xs font-medium border ${isReschedule ? 'bg-purple-600/20 text-purple-400 border-purple-900/50' : 'bg-amber-600/20 text-amber-400 border-amber-900/50'}`}>
@@ -368,21 +367,21 @@ export default function AdminAppointmentsPage() {
 
       {scheduleOpen && scheduleAppt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="card w-full max-w-lg p-8 relative border border-emerald-900/40">
+          <div className="card relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto border border-emerald-900/40 p-5 sm:p-8">
             <button
               type="button"
               onClick={() => {
                 setScheduleOpen(false)
                 setScheduleAppt(null)
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute right-3 top-3 text-slate-400 hover:text-white sm:right-4 sm:top-4"
               aria-label="Schließen"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
-            <div className="mb-6">
-              <div className="text-xs text-emerald-500 font-semibold tracking-widest mb-1">TERMIN PLANEN</div>
-              <h2 className="text-3xl font-semibold tracking-tight">Datum &amp; Zeitfenster</h2>
+            <div className="mb-5 pr-8 sm:mb-6">
+              <div className="mb-1 text-xs font-semibold tracking-widest text-emerald-500">TERMIN PLANEN</div>
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Datum &amp; Zeitfenster</h2>
               <p className="text-slate-400 mt-2 text-sm">
                 {scheduleAppt.service_type} • {scheduleAppt.objects?.name}
                 {scheduleAppt.objects?.city ? ` (${scheduleAppt.objects.city})` : ''}

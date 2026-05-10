@@ -263,35 +263,33 @@ export default function AppointmentsListPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+      <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between lg:mb-10">
         <div>
-          <div className="text-emerald-500 text-sm font-semibold tracking-[2px] mb-2">TERMINÜBERSICHT</div>
-          <h1 className="text-5xl font-semibold tracking-tighter">Meine Termine</h1>
-          <p className="text-xl text-slate-400 mt-2">
+          <div className="mb-1.5 text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm sm:mb-2">TERMINÜBERSICHT</div>
+          <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Meine Termine</h1>
+          <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
             {awaitingDate.length} ohne Termindatum • {upcoming.length} geplant • {overdue.length} überfällig •{' '}
             {totalAppointments} gesamt
           </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button 
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <button
+            type="button"
             onClick={exportToPDF}
-            className="btn-secondary flex items-center gap-2 px-5 py-3 text-sm"
+            className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-auto"
           >
             📄 Als PDF exportieren
           </button>
-          <Link 
-            href="/dashboard/appointments/new" 
-            className="btn-primary flex items-center gap-3 text-base px-8 py-4 w-fit"
-          >
-            <Plus className="w-5 h-5" />
+          <Link href="/dashboard/appointments/new" className="btn-primary flex w-full items-center justify-center gap-2 sm:w-auto">
+            <Plus className="h-5 w-5 shrink-0" />
             Neuen Termin anfragen
           </Link>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-8">
+      <div className="mb-5 sm:mb-8">
         <div className="relative max-w-md">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
             <Search className="w-5 h-5" />
@@ -321,41 +319,35 @@ export default function AppointmentsListPage() {
 
       {/* Empty State */}
       {appointments.length === 0 ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <Calendar className="w-10 h-10 text-emerald-500" />
+        <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-800 sm:mb-6 sm:h-20 sm:w-20">
+            <Calendar className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-3xl font-semibold mb-4">Noch keine Termine</h3>
-          <p className="text-xl text-slate-400 max-w-md mx-auto mb-8">
+          <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Noch keine Termine</h3>
+          <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
             Fordern Sie Ihren ersten Termin an — z. B. für Wartung, Reparatur oder Montage.
           </p>
-          <Link 
-            href="/dashboard/appointments/new" 
-            className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-lg"
-          >
-            <Plus className="w-5 h-5" />
+          <Link href="/dashboard/appointments/new" className="btn-primary inline-flex items-center justify-center gap-2">
+            <Plus className="h-5 w-5 shrink-0" />
             Ersten Termin anfragen
           </Link>
         </div>
       ) : filteredAppointments.length === 0 && searchTerm ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <Search className="w-10 h-10 text-emerald-500" />
+        <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-800 sm:mb-6 sm:h-20 sm:w-20">
+            <Search className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-3xl font-semibold mb-4">Keine Termine gefunden</h3>
-          <p className="text-xl text-slate-400 max-w-md mx-auto mb-8">
+          <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Keine Termine gefunden</h3>
+          <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
             Keine Ergebnisse für „{searchTerm}“. Versuchen Sie eine andere Suche.
           </p>
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={() => setSearchTerm('')} className="btn-secondary">
             Suche zurücksetzen
           </button>
         </div>
       ) : (
         /* Appointments List */
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredAppointments.map((appt) => {
             const statusInfo = getStatusBadge(appt.status)
             const StatusIcon = statusInfo.icon
@@ -368,18 +360,18 @@ export default function AppointmentsListPage() {
             const noDateYet = !pd
 
             return (
-              <div key={appt.id} className="card p-6 hover:border-emerald-500/50 transition-all group">
-                <div className="flex flex-col md:flex-row md:items-center gap-6">
-                  <div className="flex-shrink-0">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isOverdue ? 'bg-red-600/10' : 'bg-emerald-600/10'}`}>
-                      <Calendar className={`w-8 h-8 ${isOverdue ? 'text-red-500' : 'text-emerald-500'}`} />
+              <div key={appt.id} className="card p-5 transition-all group hover:border-emerald-500/50 sm:p-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
+                  <div className="shrink-0">
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl sm:h-16 sm:w-16 ${isOverdue ? 'bg-red-600/10' : 'bg-emerald-600/10'}`}>
+                      <Calendar className={`h-7 w-7 sm:h-8 sm:w-8 ${isOverdue ? 'text-red-500' : 'text-emerald-500'}`} />
                     </div>
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-semibold text-xl tracking-tight group-hover:text-emerald-400 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-semibold tracking-tight transition-colors group-hover:text-emerald-400 sm:text-xl">
                           {appt.service_type}
                         </h3>
                         {appt.objects && (

@@ -68,25 +68,25 @@ export default function NewObjectPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <Link href="/dashboard/objects" className="flex items-center gap-2 text-slate-400 hover:text-white mb-8">
-        <ArrowLeft className="w-4 h-4" /> Zurück zu Meine Objekte
+    <div className="mx-auto max-w-3xl">
+      <Link href="/dashboard/objects" className="mb-5 flex items-center gap-2 text-slate-400 hover:text-white sm:mb-8">
+        <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Meine Objekte
       </Link>
 
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-emerald-600/10 rounded-3xl flex items-center justify-center">
-            <Home className="w-8 h-8 text-emerald-500" />
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-emerald-600/10 sm:h-16 sm:w-16">
+            <Home className="h-8 w-8 text-emerald-500" />
           </div>
-          <div>
-            <h1 className="text-5xl font-semibold tracking-tighter">Neues Objekt anlegen</h1>
-            <p className="text-xl text-slate-400 mt-2">Fügen Sie Ihr Haus, Ihre Wohnung oder Ferienimmobilie hinzu.</p>
+          <div className="min-w-0">
+            <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Neues Objekt anlegen</h1>
+            <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">Fügen Sie Ihr Haus, Ihre Wohnung oder Ferienimmobilie hinzu.</p>
           </div>
         </div>
       </div>
 
-      <div className="card p-8">
-        <div className="space-y-6">
+      <div className="card p-5 sm:p-6 lg:p-8">
+        <div className="space-y-5 sm:space-y-6">
           {/* Name */}
           <div>
             <label className="text-sm text-slate-300 block mb-2">Name des Objekts *</label>
@@ -95,7 +95,7 @@ export default function NewObjectPage() {
               name="name" 
               value={formData.name} 
               onChange={handleInputChange}
-              className="input w-full text-lg" 
+              className="input w-full text-base sm:text-lg"
               placeholder="z.B. Eigenheim Wiesloch oder Ferienwohnung Sylt"
               required
             />
@@ -155,11 +155,12 @@ export default function NewObjectPage() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-800 flex gap-4">
-          <button 
+        <div className="mt-6 flex flex-col gap-3 border-t border-slate-800 pt-6 sm:mt-8 sm:flex-row sm:gap-4">
+          <button
+            type="button"
             onClick={createObject}
             disabled={isSaving || !formData.name}
-            className="btn-primary flex-1 py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-50"
+            className="btn-primary order-1 flex flex-1 items-center justify-center gap-2 py-3.5 disabled:opacity-50 sm:order-none sm:gap-3 sm:py-4 sm:text-lg"
           >
             {isSaving ? (
               <>
@@ -179,10 +180,7 @@ export default function NewObjectPage() {
             )}
           </button>
 
-          <Link 
-            href="/dashboard/objects" 
-            className="btn-secondary px-8 py-4 text-lg"
-          >
+          <Link href="/dashboard/objects" className="btn-secondary order-2 flex flex-1 justify-center py-3.5 text-center sm:order-none sm:flex-initial sm:px-8 sm:py-4 sm:text-lg">
             Abbrechen
           </Link>
         </div>

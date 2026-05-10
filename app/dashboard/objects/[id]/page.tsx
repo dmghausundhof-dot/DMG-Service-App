@@ -222,24 +222,28 @@ export default function ObjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto p-8 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-slate-400">Objekt wird geladen...</p>
+      <div className="mx-auto max-w-5xl px-4 py-12 text-center">
+        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
+        <p className="text-sm text-slate-400">Objekt wird geladen...</p>
       </div>
     )
   }
 
   if (error || !object) {
     return (
-      <div className="max-w-5xl mx-auto p-8">
-        <Link href="/dashboard/objects" className="flex items-center gap-2 text-slate-400 hover:text-white mb-6">
-          <ArrowLeft className="w-4 h-4" /> Zurück zu Meine Objekte
+      <div className="mx-auto max-w-5xl px-4 py-4 sm:py-6">
+        <Link href="/dashboard/objects" className="mb-5 flex items-center gap-2 text-slate-400 hover:text-white sm:mb-6">
+          <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Meine Objekte
         </Link>
-        <div className="card p-12 text-center">
-          <Home className="w-16 h-16 text-red-500 mx-auto mb-6" />
-          <h1 className="text-3xl font-semibold mb-4">Objekt nicht gefunden</h1>
-          <p className="text-slate-400 mb-8">{error || 'Das angeforderte Objekt existiert nicht oder Sie haben keine Zugriffsberechtigung.'}</p>
-          <Link href="/dashboard/objects" className="btn-primary">Zurück zur Übersicht</Link>
+        <div className="card p-6 text-center sm:p-10 lg:p-12">
+          <Home className="mx-auto mb-5 h-14 w-14 text-red-500 sm:mb-6 sm:h-16 sm:w-16" />
+          <h1 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Objekt nicht gefunden</h1>
+          <p className="mb-6 text-sm text-slate-400 sm:mb-8 sm:text-base">
+            {error || 'Das angeforderte Objekt existiert nicht oder Sie haben keine Zugriffsberechtigung.'}
+          </p>
+          <Link href="/dashboard/objects" className="btn-primary">
+            Zurück zur Übersicht
+          </Link>
         </div>
       </div>
     )
@@ -248,57 +252,55 @@ export default function ObjectDetailPage() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <Link href="/dashboard/objects" className="flex items-center gap-2 text-slate-400 hover:text-white mb-2">
-            <ArrowLeft className="w-4 h-4" /> Zurück zu Meine Objekte
+      <div className="mb-6 flex flex-col gap-5 sm:mb-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <Link href="/dashboard/objects" className="mb-2 flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+            <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Meine Objekte
           </Link>
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-emerald-600/10 rounded-2xl flex items-center justify-center">
-              <Home className="w-7 h-7 text-emerald-500" />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600/10 sm:h-14 sm:w-14">
+              <Home className="h-7 w-7 text-emerald-500 sm:h-8 sm:w-8" />
             </div>
-            <div>
-              <h1 className="text-5xl font-semibold tracking-tighter">{object.name}</h1>
+            <div className="min-w-0">
+              <h1 className="break-words text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">{object.name}</h1>
               {(object.street || object.city) && (
-                <div className="flex items-center gap-2 text-lg text-slate-400 mt-1">
-                  <MapPin className="w-5 h-5" />
-                  {[object.street, object.postal_code, object.city].filter(Boolean).join(', ')}
+                <div className="mt-1 flex items-start gap-2 text-base text-slate-400 sm:items-center sm:text-lg">
+                  <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-slate-500 sm:mt-0" />
+                  <span className="break-words">
+                    {[object.street, object.postal_code, object.city].filter(Boolean).join(', ')}
+                  </span>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:shrink-0">
           {!isEditing && (
             <>
-              <button 
+              <button
+                type="button"
                 onClick={handleEdit}
-                className="btn-secondary flex items-center gap-2 px-5 py-3"
+                className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-auto"
               >
-                <Edit className="w-4 h-4" /> Bearbeiten
+                <Edit className="h-4 w-4 shrink-0" /> Bearbeiten
               </button>
-              <button 
+              <button
+                type="button"
                 onClick={handleDelete}
-                className="px-4 py-3 text-sm border border-red-900/50 text-red-400 hover:bg-red-950/50 hover:text-red-300 rounded-2xl transition flex items-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-900/50 px-4 py-2.5 text-sm text-red-400 transition hover:bg-red-950/50 hover:text-red-300 sm:w-auto sm:py-3"
               >
-                <Trash2 className="w-4 h-4" /> Löschen
+                <Trash2 className="h-4 w-4 shrink-0" /> Löschen
               </button>
             </>
           )}
           {isEditing && (
             <>
-              <button 
-                onClick={handleCancelEdit}
-                className="btn-secondary px-6 py-3"
-              >
+              <button type="button" onClick={handleCancelEdit} className="btn-secondary w-full sm:w-auto">
                 Abbrechen
               </button>
-              <button 
-                onClick={handleSaveEdit}
-                className="btn-primary flex items-center gap-2 px-6 py-3"
-              >
-                <Save className="w-4 h-4" /> Speichern
+              <button type="button" onClick={handleSaveEdit} className="btn-primary flex w-full items-center justify-center gap-2 sm:w-auto">
+                <Save className="h-4 w-4 shrink-0" /> Speichern
               </button>
             </>
           )}
@@ -307,8 +309,8 @@ export default function ObjectDetailPage() {
 
       {/* Edit Form */}
       {isEditing && (
-        <div className="card p-8 mb-8">
-          <h2 className="text-2xl font-semibold mb-6">Objekt bearbeiten</h2>
+        <div className="card mb-6 p-5 sm:mb-8 sm:p-6 lg:p-8">
+          <h2 className="mb-4 text-xl font-semibold sm:mb-6 sm:text-2xl">Objekt bearbeiten</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="text-sm text-slate-300 block mb-2">Name des Objekts *</label>
@@ -317,8 +319,8 @@ export default function ObjectDetailPage() {
                 name="name" 
                 value={editForm.name} 
                 onChange={handleInputChange}
-                className="input w-full text-lg" 
-                placeholder="z.B. Eigenheim Wiesloch" 
+                className="input w-full text-base sm:text-lg"
+                placeholder="z.B. Eigenheim Wiesloch"
               />
             </div>
             <div>
@@ -369,7 +371,7 @@ export default function ObjectDetailPage() {
       )}
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6 lg:mb-10">
         <div className="card p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-emerald-600/10 rounded-xl flex items-center justify-center">
@@ -454,7 +456,7 @@ export default function ObjectDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="card p-8 text-center text-slate-400">
+            <div className="card p-6 text-center text-sm text-slate-400 sm:p-8 sm:text-base">
               <Wrench className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p className="text-sm">Noch keine Anlagen für dieses Objekt.</p>
               <Link href={`/dashboard/assets/new?object_id=${object.id}`} className="text-emerald-400 text-sm mt-2 inline-block">→ Erste Anlage hinzufügen</Link>
@@ -506,7 +508,7 @@ export default function ObjectDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="card p-8 text-center text-slate-400">
+            <div className="card p-6 text-center text-sm text-slate-400 sm:p-8 sm:text-base">
               <Calendar className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p className="text-sm">Keine Termine für dieses Objekt.</p>
               <Link href={`/dashboard/appointments/new?object_id=${object.id}`} className="text-emerald-400 text-sm mt-2 inline-block">→ Termin anfragen</Link>
@@ -562,7 +564,7 @@ export default function ObjectDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="card p-8 text-center text-slate-400">
+            <div className="card p-6 text-center text-sm text-slate-400 sm:p-8 sm:text-base">
               <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p className="text-sm">Keine Dokumente für dieses Objekt.</p>
               <Link href={`/dashboard/documents/new?object_id=${object.id}`} className="text-emerald-400 text-sm mt-2 inline-block">→ Eigene Datei hochladen</Link>

@@ -353,16 +353,16 @@ function NewAssetForm() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-12">
+    <div className="mx-auto max-w-3xl pb-8 sm:pb-12">
       <Link
         href="/dashboard/assets"
-        className="flex items-center gap-2 text-slate-400 mb-6 mt-2 hover:text-white"
+        className="mb-5 mt-1 flex items-center gap-2 text-sm text-slate-400 hover:text-white sm:mb-6 sm:mt-2"
       >
-        <ArrowLeft className="w-4 h-4" /> Zurück
+        <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück
       </Link>
 
-      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-2">Neue Anlage</h1>
-      <p className="text-lg text-slate-400 mb-8">
+      <h1 className="mb-2 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">Neue Anlage</h1>
+      <p className="mb-6 text-base text-slate-400 sm:mb-8 sm:text-lg">
         Mobil: Kamera oder Galerie – anschließend wertet Grok das Bild aus und reichert Daten per Websuche an.
       </p>
 
@@ -396,32 +396,32 @@ function NewAssetForm() {
       </div>
 
       {/* Mobil: drei klare Zugänge */}
-      <div className="md:hidden space-y-3 mb-8">
-        <p className="text-xs font-semibold text-slate-500 tracking-widest">FOTO ERFASSEN</p>
-        <div className="grid grid-cols-1 gap-3">
+      <div className="mb-6 space-y-2 md:hidden sm:mb-8">
+        <p className="text-[10px] font-semibold tracking-widest text-slate-500 sm:text-xs">FOTO ERFASSEN</p>
+        <div className="grid grid-cols-1 gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => cameraInputRef.current?.click()}
-            className="flex items-center justify-center gap-3 rounded-3xl border border-emerald-800/60 bg-emerald-950/40 py-5 text-lg font-medium text-emerald-100 active:scale-[0.99] transition"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-800/60 bg-emerald-950/40 py-3.5 text-base font-medium text-emerald-100 transition active:scale-[0.99] sm:gap-3 sm:rounded-3xl sm:py-4 sm:text-lg"
           >
-            <Camera className="w-7 h-7 text-emerald-400" />
+            <Camera className="h-6 w-6 shrink-0 text-emerald-400 sm:h-7 sm:w-7" />
             Kamera (Foto)
           </button>
           <button
             type="button"
             onClick={() => galleryInputRef.current?.click()}
-            className="flex items-center justify-center gap-3 rounded-3xl border border-slate-700 bg-slate-900/80 py-5 text-lg font-medium text-slate-200 active:scale-[0.99] transition"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 py-3.5 text-base font-medium text-slate-200 transition active:scale-[0.99] sm:gap-3 sm:rounded-3xl sm:py-4 sm:text-lg"
           >
-            <Images className="w-7 h-7 text-slate-400" />
+            <Images className="h-6 w-6 shrink-0 text-slate-400 sm:h-7 sm:w-7" />
             Galerie
           </button>
           <button
             type="button"
             onClick={openLiveCamera}
-            className="flex items-center justify-center gap-3 rounded-3xl border border-slate-700 bg-slate-900/50 py-4 text-base font-medium text-slate-300"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/50 py-3 text-sm font-medium text-slate-300 sm:rounded-3xl sm:py-3.5 sm:text-base"
           >
-            <Sparkles className="w-5 h-5 text-amber-400" />
-            Live-Sucher (Vorschau & Auslösen)
+            <Sparkles className="h-5 w-5 shrink-0 text-amber-400" />
+            <span className="text-left leading-snug">Live-Sucher (Vorschau &amp; Auslösen)</span>
           </button>
         </div>
       </div>
@@ -450,7 +450,7 @@ function NewAssetForm() {
         </div>
       )}
 
-      <div className="card p-6 sm:p-8 space-y-8">
+      <div className="card space-y-6 p-5 sm:space-y-8 sm:p-6 lg:p-8">
         {/* Desktop: Foto */}
         <div className="hidden md:block">
           <label className="block text-sm font-medium mb-3 text-slate-300">Foto der Anlage</label>
@@ -459,7 +459,7 @@ function NewAssetForm() {
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
-                className="flex flex-col items-center gap-3 rounded-3xl border border-emerald-800/40 bg-emerald-950/20 py-10 hover:border-emerald-600 transition"
+                className="flex flex-col items-center gap-2 rounded-3xl border border-emerald-800/40 bg-emerald-950/20 py-7 transition hover:border-emerald-600 sm:gap-3 sm:py-10"
               >
                 <Camera className="w-10 h-10 text-emerald-400" />
                 <span className="font-medium">Kamera / Webcam</span>
@@ -467,7 +467,7 @@ function NewAssetForm() {
               <button
                 type="button"
                 onClick={() => galleryInputRef.current?.click()}
-                className="flex flex-col items-center gap-3 rounded-3xl border border-slate-700 py-10 hover:border-slate-500 transition"
+                className="flex flex-col items-center gap-2 rounded-3xl border border-slate-700 py-7 transition hover:border-slate-500 sm:gap-3 sm:py-10"
               >
                 <Upload className="w-10 h-10 text-slate-400" />
                 <span className="font-medium">Datei wählen</span>
@@ -475,7 +475,7 @@ function NewAssetForm() {
               <button
                 type="button"
                 onClick={openLiveCamera}
-                className="flex flex-col items-center gap-3 rounded-3xl border border-slate-700 py-10 hover:border-amber-700/50 transition"
+                className="flex flex-col items-center gap-2 rounded-3xl border border-slate-700 py-7 transition hover:border-amber-700/50 sm:gap-3 sm:py-10"
               >
                 <Sparkles className="w-10 h-10 text-amber-400" />
                 <span className="font-medium">Live-Sucher</span>
@@ -509,7 +509,7 @@ function NewAssetForm() {
             <img
               src={imagePreview}
               alt=""
-              className="rounded-3xl w-full max-h-[min(52vh,420px)] object-contain bg-black"
+              className="max-h-[min(42vh,380px)] w-full rounded-2xl bg-black object-contain sm:max-h-[min(52vh,420px)] sm:rounded-3xl"
             />
           </div>
         ) : (
@@ -525,7 +525,7 @@ function NewAssetForm() {
               type="button"
               onClick={analyze}
               disabled={isAnalyzing}
-              className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-3"
+              className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 sm:gap-3 sm:py-4 sm:text-lg"
             >
               {isAnalyzing ? (
                 <>
@@ -557,7 +557,7 @@ function NewAssetForm() {
 
         {mergedAnalysis && (
           <div className="space-y-4">
-            <div className="rounded-3xl border border-emerald-900/70 bg-emerald-950/30 p-6">
+            <div className="rounded-2xl border border-emerald-900/70 bg-emerald-950/30 p-4 sm:rounded-3xl sm:p-6">
               <div className="text-emerald-400 font-semibold mb-4 flex flex-wrap items-center gap-2">
                 <CheckCircle className="w-5 h-5 shrink-0" />
                 Vorschlag (Bild + Web)
@@ -567,7 +567,7 @@ function NewAssetForm() {
                   </span>
                 ) : null}
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2 sm:gap-y-3">
                 <div>
                   <span className="text-slate-500">Kategorie:</span>{' '}
                   <span className="text-slate-100">{mergedAnalysis.category}</span>
@@ -586,7 +586,7 @@ function NewAssetForm() {
                   <span className="text-slate-500">Modell:</span>{' '}
                   <span className="text-slate-100">{mergedAnalysis.model || '—'}</span>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <span className="text-slate-500">Leistung:</span>{' '}
                   <span className="text-slate-100">{mergedAnalysis.capacity || '—'}</span>
                 </div>
@@ -748,7 +748,7 @@ function NewAssetForm() {
           disabled={
             isSaving || !selectedObjectId || !imagePreview || objects.length === 0
           }
-          className="btn-primary w-full py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-50"
+          className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 disabled:opacity-50 sm:gap-3 sm:py-4 sm:text-lg"
         >
           {isSaving ? (
             <>
@@ -771,9 +771,9 @@ export default function NewAssetPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-3xl mx-auto py-24 text-center text-slate-400">
-          <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4" />
-          Laden…
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center text-slate-400 sm:py-24">
+          <Loader2 className="mx-auto mb-3 h-9 w-9 animate-spin sm:mb-4 sm:h-10 sm:w-10" />
+          <p className="text-sm sm:text-base">Laden…</p>
         </div>
       }
     >

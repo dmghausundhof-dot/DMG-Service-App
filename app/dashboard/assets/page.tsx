@@ -295,9 +295,9 @@ export default function AssetsListPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-8 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-slate-400">Anlagen werden geladen...</p>
+      <div className="mx-auto max-w-7xl px-4 py-12 text-center">
+        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent"></div>
+        <p className="text-sm text-slate-400">Anlagen werden geladen...</p>
       </div>
     )
   }
@@ -305,11 +305,11 @@ export default function AssetsListPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+      <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between lg:mb-10">
         <div>
-          <div className="text-emerald-500 text-sm font-semibold tracking-[2px] mb-2">ANLAGENÜBERSICHT</div>
-          <h1 className="text-5xl font-semibold tracking-tighter">Meine Anlagen</h1>
-          <p className="text-xl text-slate-400 mt-2">
+          <div className="mb-1.5 text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm sm:mb-2">ANLAGENÜBERSICHT</div>
+          <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Meine Anlagen</h1>
+          <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
             {objectFilter ? (
               <>Gefiltert • {filteredAssets.length} Anlagen{searchTerm && ` (Suche: "${searchTerm}")`}</>
             ) : (
@@ -320,19 +320,17 @@ export default function AssetsListPage() {
             )}
           </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button 
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <button
+            type="button"
             onClick={exportToPDF}
-            className="btn-secondary flex items-center gap-2 px-5 py-3 text-sm"
+            className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-auto"
           >
             📄 Als PDF exportieren
           </button>
-          <Link 
-            href="/dashboard/assets/new" 
-            className="btn-primary flex items-center gap-3 text-base px-8 py-4 w-fit"
-          >
-            <Plus className="w-5 h-5" />
+          <Link href="/dashboard/assets/new" className="btn-primary flex w-full items-center justify-center gap-2 sm:w-auto">
+            <Plus className="h-5 w-5 shrink-0" />
             Neue Anlage hinzufügen
           </Link>
         </div>
@@ -340,17 +338,22 @@ export default function AssetsListPage() {
 
       {/* Object Filter Banner */}
       {objectFilter && (
-        <div className="mb-6 p-4 bg-emerald-950/30 border border-emerald-900/50 rounded-2xl flex items-center justify-between">
-          <div className="flex items-center gap-3 text-sm">
-            <div className="px-3 py-1 bg-emerald-600/20 text-emerald-400 rounded-full text-xs font-medium">OBJEKT-FILTER AKTIV</div>
-            <span className="text-slate-300">Anzeige nur für dieses Objekt. <Link href="/dashboard/assets" className="text-emerald-400 hover:underline">Alle Anlagen anzeigen →</Link></span>
+        <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-emerald-900/50 bg-emerald-950/30 p-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:gap-3">
+            <div className="w-fit shrink-0 rounded-full bg-emerald-600/20 px-3 py-1 text-xs font-medium text-emerald-400">OBJEKT-FILTER AKTIV</div>
+            <span className="min-w-0 text-slate-300">
+              Anzeige nur für dieses Objekt.{' '}
+              <Link href="/dashboard/assets" className="text-emerald-400 hover:underline">
+                Alle Anlagen anzeigen →
+              </Link>
+            </span>
           </div>
         </div>
       )}
 
       {/* Search Bar */}
       {assets.length > 0 && (
-        <div className="mb-8">
+        <div className="mb-5 sm:mb-8">
           <div className="relative max-w-md">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
               <Search className="w-5 h-5" />
@@ -381,42 +384,35 @@ export default function AssetsListPage() {
 
       {/* Empty State */}
       {assets.length === 0 ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <Wrench className="w-10 h-10 text-emerald-500" />
+        <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-800 sm:mb-6 sm:h-20 sm:w-20">
+            <Wrench className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-3xl font-semibold mb-4">Noch keine Anlagen</h3>
-          <p className="text-xl text-slate-400 max-w-md mx-auto mb-8">
-            Fügen Sie Ihre erste Anlage hinzu — z. B. Balkonkraftwerk, Wärmepumpe oder Filteranlage. 
-            Grok erkennt automatisch alle Details aus einem Foto.
+          <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Noch keine Anlagen</h3>
+          <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
+            Fügen Sie Ihre erste Anlage hinzu — z. B. Balkonkraftwerk, Wärmepumpe oder Filteranlage. Grok erkennt automatisch alle Details aus einem Foto.
           </p>
-          <Link 
-            href="/dashboard/assets/new" 
-            className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-lg"
-          >
-            <Plus className="w-5 h-5" />
+          <Link href="/dashboard/assets/new" className="btn-primary inline-flex items-center justify-center gap-2">
+            <Plus className="h-5 w-5 shrink-0" />
             Erste Anlage anlegen
           </Link>
         </div>
       ) : filteredAssets.length === 0 && searchTerm ? (
-        <div className="card p-16 text-center">
-          <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <Search className="w-10 h-10 text-emerald-500" />
+        <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-800 sm:mb-6 sm:h-20 sm:w-20">
+            <Search className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-3xl font-semibold mb-4">Keine Treffer</h3>
-          <p className="text-xl text-slate-400 max-w-md mx-auto mb-8">
+          <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Keine Treffer</h3>
+          <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
             Keine Anlagen gefunden für „{searchTerm}“. Versuchen Sie eine andere Suche.
           </p>
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="btn-secondary px-8 py-4 text-lg"
-          >
+          <button type="button" onClick={() => setSearchTerm('')} className="btn-secondary">
             Suche zurücksetzen
           </button>
         </div>
       ) : (
         /* Assets Grid */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
           {filteredAssets.map((asset) => {
             const status = getAssetStatus(asset)
             const StatusIcon = status.icon
@@ -424,7 +420,7 @@ export default function AssetsListPage() {
             return (
               <div key={asset.id} className="card group overflow-hidden hover:border-emerald-500/50 transition-all flex flex-col">
                 {/* Image or Placeholder */}
-                <div className="relative h-56 bg-slate-900 flex items-center justify-center overflow-hidden">
+                <div className="relative flex h-48 items-center justify-center overflow-hidden bg-slate-900 sm:h-56">
                   {asset.image_url ? (
                     <img 
                       src={asset.image_url} 
@@ -457,14 +453,12 @@ export default function AssetsListPage() {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 flex-1 flex flex-col">
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
                   <div className="flex-1">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <Link href={`/dashboard/assets/${asset.id}`} className="group-hover:text-emerald-400 transition-colors">
-                          <h3 className="font-semibold text-2xl tracking-tight">
-                            {asset.name}
-                          </h3>
+                    <div className="mb-3 flex items-start justify-between">
+                      <div className="min-w-0">
+                        <Link href={`/dashboard/assets/${asset.id}`} className="transition-colors group-hover:text-emerald-400">
+                          <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">{asset.name}</h3>
                         </Link>
                         {asset.objects && (
                           <p className="text-sm text-slate-500 mt-0.5">
@@ -503,17 +497,18 @@ export default function AssetsListPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-3 mt-6 pt-6 border-t border-slate-800">
+                  <div className="mt-5 flex flex-col gap-2 border-t border-slate-800 pt-5 sm:mt-6 sm:flex-row sm:gap-3 sm:pt-6">
                     <button 
+                      type="button"
                       onClick={() => alert('Wartungs-Termin planen: Hier würde ein Termin-Formular mit vorausgefüllter Anlage erscheinen.')}
-                      className="flex-1 btn-secondary text-sm py-2.5 flex items-center justify-center gap-2"
+                      className="btn-secondary flex flex-1 items-center justify-center gap-2 py-2.5 text-sm"
                     >
                       <Calendar className="w-4 h-4" />
                       Wartung planen
                     </button>
-                    <Link 
+                    <Link
                       href={`/dashboard/assets/${asset.id}`}
-                      className="px-4 py-2.5 text-sm border border-slate-700 hover:bg-slate-800 rounded-2xl transition flex items-center"
+                      className="flex flex-1 items-center justify-center rounded-2xl border border-slate-700 px-4 py-2.5 text-sm transition hover:bg-slate-800 sm:flex-initial"
                     >
                       Details &amp; Bearbeiten
                     </Link>
@@ -527,7 +522,7 @@ export default function AssetsListPage() {
 
       {/* Footer Info */}
       {assets.length > 0 && (
-        <div className="mt-8 text-center text-xs text-slate-500">
+        <div className="mt-6 text-center text-xs text-slate-500 sm:mt-8">
           Tipp: Klicken Sie auf „Details &amp; Bearbeiten“, um die Anlage zu bearbeiten oder einen Termin zu planen. • PDF-Export enthält Logo, Tabelle und farbige Status.
         </div>
       )}

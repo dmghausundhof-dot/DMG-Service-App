@@ -433,24 +433,28 @@ export default function AssetDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto p-8 text-center">
-        <Loader2 className="w-8 h-8 animate-spin mx-auto text-emerald-500" />
-        <p className="mt-4 text-slate-400">Anlage wird geladen...</p>
+      <div className="mx-auto max-w-5xl px-4 py-12 text-center">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-500" />
+        <p className="mt-3 text-sm text-slate-400">Anlage wird geladen...</p>
       </div>
     )
   }
 
   if (error || !asset) {
     return (
-      <div className="max-w-5xl mx-auto p-8">
-        <Link href="/dashboard/assets" className="flex items-center gap-2 text-slate-400 hover:text-white mb-6">
-          <ArrowLeft className="w-4 h-4" /> Zurück zu Meine Anlagen
+      <div className="mx-auto max-w-5xl px-4 py-4 sm:py-6">
+        <Link href="/dashboard/assets" className="mb-5 flex items-center gap-2 text-slate-400 hover:text-white sm:mb-6">
+          <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Meine Anlagen
         </Link>
-        <div className="card p-12 text-center">
-          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-6" />
-          <h1 className="text-3xl font-semibold mb-4">Anlage nicht gefunden</h1>
-          <p className="text-slate-400 mb-8">{error || 'Die angeforderte Anlage existiert nicht oder Sie haben keine Zugriffsberechtigung.'}</p>
-          <Link href="/dashboard/assets" className="btn-primary">Zurück zur Übersicht</Link>
+        <div className="card p-6 text-center sm:p-10 lg:p-12">
+          <AlertTriangle className="mx-auto mb-5 h-14 w-14 text-red-500 sm:mb-6 sm:h-16 sm:w-16" />
+          <h1 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Anlage nicht gefunden</h1>
+          <p className="mb-6 text-sm text-slate-400 sm:mb-8 sm:text-base">
+            {error || 'Die angeforderte Anlage existiert nicht oder Sie haben keine Zugriffsberechtigung.'}
+          </p>
+          <Link href="/dashboard/assets" className="btn-primary">
+            Zurück zur Übersicht
+          </Link>
         </div>
       </div>
     )
@@ -461,42 +465,51 @@ export default function AssetDetailPage() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <Link href="/dashboard/assets" className="flex items-center gap-2 text-slate-400 hover:text-white mb-2">
-            <ArrowLeft className="w-4 h-4" /> Zurück zu Meine Anlagen
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+        <div className="min-w-0">
+          <Link href="/dashboard/assets" className="mb-2 flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+            <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Meine Anlagen
           </Link>
-          <h1 className="text-5xl font-semibold tracking-tighter flex items-center gap-4">
-            {formData.name}
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium border ${currentStatus.bg}`}>
-              <currentStatus.icon className="w-4 h-4" />
+          <h1 className="flex flex-col items-start gap-3 text-3xl font-semibold tracking-tighter sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 lg:text-4xl xl:text-5xl">
+            <span className="min-w-0 break-words">{formData.name}</span>
+            <div className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium sm:px-4 sm:py-1.5 sm:text-sm ${currentStatus.bg}`}>
+              <currentStatus.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               {currentStatus.label}
             </div>
           </h1>
-          <p className="text-xl text-slate-400 mt-2">
+          <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
             {asset.objects?.name} {asset.objects?.city && `• ${asset.objects.city}`}
           </p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={logMaintenance} className="btn-secondary flex items-center gap-2 px-6 py-3">
-            <Calendar className="w-4 h-4" /> Wartung protokollieren
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:shrink-0">
+          <button type="button" onClick={logMaintenance} className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-auto">
+            <Calendar className="h-4 w-4 shrink-0" /> Wartung protokollieren
           </button>
-          <button onClick={save} disabled={isSaving} className="btn-primary flex items-center gap-3 px-8 py-3 text-lg">
-            {isSaving ? <><Loader2 className="w-5 h-5 animate-spin" /> Speichert...</> : <><Save className="w-5 h-5" /> Speichern</>}
+          <button type="button" onClick={save} disabled={isSaving} className="btn-primary flex w-full items-center justify-center gap-2 px-6 py-3 sm:w-auto sm:text-lg">
+            {isSaving ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" /> Speichert...
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5 shrink-0" /> Speichern
+              </>
+            )}
           </button>
-          <button 
-            onClick={deleteAsset} 
-            className="px-4 py-3 text-sm border border-red-900/50 text-red-400 hover:bg-red-950/50 hover:text-red-300 rounded-2xl transition flex items-center gap-2"
+          <button
+            type="button"
+            onClick={deleteAsset}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-900/50 px-4 py-2.5 text-sm text-red-400 transition hover:bg-red-950/50 hover:text-red-300 sm:w-auto sm:py-3"
           >
-            <Trash2 className="w-4 h-4" /> Löschen
+            <Trash2 className="h-4 w-4 shrink-0" /> Löschen
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-8">
         {/* Image Section */}
         <div className="lg:col-span-2">
-          <div className="card p-6 sticky top-6">
+          <div className="card sticky top-4 p-5 sm:top-6 sm:p-6">
             <label className="block text-sm font-medium text-slate-300 mb-3">Foto der Anlage</label>
             
             <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-slate-950">
@@ -571,7 +584,7 @@ export default function AssetDetailPage() {
 
         {/* Edit Form */}
         <div className="lg:col-span-3">
-          <div className="card p-8">
+          <div className="card p-5 sm:p-6 lg:p-8">
             <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
               <Edit className="w-6 h-6 text-emerald-500" /> Anlage bearbeiten
             </h2>
@@ -818,7 +831,7 @@ export default function AssetDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="card p-8 text-center text-slate-400">
+          <div className="card p-6 text-center text-sm text-slate-400 sm:p-8 sm:text-base">
             Keine Termine für dieses Objekt vorhanden.
             <div className="mt-4">
               <Link href="/dashboard/appointments/new" className="text-emerald-400 hover:underline">→ Neuen Termin anfragen</Link>

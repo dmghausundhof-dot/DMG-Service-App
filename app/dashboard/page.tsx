@@ -88,81 +88,89 @@ export default async function DashboardOverview() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Welcome Header */}
-      <div className="mb-10">
-        <div className="flex items-end justify-between">
+      <div className="mb-6 lg:mb-10">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="text-emerald-500 text-sm font-semibold tracking-[2px] mb-2">WILLKOMMEN ZURÜCK</div>
-            <h1 className="text-5xl font-semibold tracking-tighter">Guten Morgen, {userName}.</h1>
-            <p className="text-xl text-slate-400 mt-3">Hier ist der aktuelle Stand Ihrer Anlagen und Termine.</p>
+            <div className="mb-1.5 text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm sm:mb-2">
+              WILLKOMMEN ZURÜCK
+            </div>
+            <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">
+              Guten Morgen, {userName}.
+            </h1>
+            <p className="mt-2 text-base text-slate-400 sm:mt-3 sm:text-lg lg:text-xl">
+              Hier ist der aktuelle Stand Ihrer Anlagen und Termine.
+            </p>
           </div>
-          
-          <Link 
-            href="/dashboard/appointments/new" 
-            className="btn-primary hidden md:flex items-center gap-3 text-base px-8 py-4"
+
+          <Link
+            href="/dashboard/appointments/new"
+            className="btn-primary hidden shrink-0 items-center gap-3 md:flex"
           >
-            <Calendar className="w-5 h-5" />
+            <Calendar className="h-5 w-5" />
             Neuen Termin anfragen
           </Link>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="card p-8 group hover:border-emerald-500/50 transition-all">
-          <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:mb-10 lg:grid-cols-4 lg:gap-6">
+        <div className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6 lg:p-8">
+          <div className="mb-4 flex items-center justify-between sm:mb-5 lg:mb-6">
             <div className="text-emerald-500">
-              <Wrench className="w-8 h-8" />
+              <Wrench className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
-            <div className="text-5xl font-semibold tabular-nums tracking-tighter text-emerald-400">{totalAssets}</div>
+            <div className="text-4xl font-semibold tabular-nums tracking-tighter text-emerald-400 lg:text-5xl">{totalAssets}</div>
           </div>
-          <div className="font-semibold text-xl">Sie haben {totalAssets} wartungsintensive Anlagen</div>
-          <p className="text-slate-400 mt-1.5 text-sm">Balkonkraftwerk, Wärmepumpe, Filter etc.</p>
+          <div className="text-lg font-semibold sm:text-xl">Sie haben {totalAssets} wartungsintensive Anlagen</div>
+          <p className="mt-1.5 text-sm text-slate-400">Balkonkraftwerk, Wärmepumpe, Filter etc.</p>
         </div>
 
-        <div className="card p-8 group hover:border-emerald-500/50 transition-all">
-          <div className="flex items-center justify-between mb-6">
+        <div className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6 lg:p-8">
+          <div className="mb-4 flex items-center justify-between sm:mb-5 lg:mb-6">
             <div className="text-emerald-500">
-              <Calendar className="w-8 h-8" />
+              <Calendar className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
-            <div className="text-5xl font-semibold tabular-nums tracking-tighter text-emerald-400">{upcomingAppointments}</div>
+            <div className="text-4xl font-semibold tabular-nums tracking-tighter text-emerald-400 lg:text-5xl">{upcomingAppointments}</div>
           </div>
-          <div className="font-semibold text-xl">Sie haben {upcomingAppointments} anstehende Termine</div>
-          <p className="text-slate-400 mt-1.5 text-sm">Nächster: Filterwechsel Balkonkraftwerk am 18.05.</p>
+          <div className="text-lg font-semibold sm:text-xl">Sie haben {upcomingAppointments} anstehende Termine</div>
+          <p className="mt-1.5 text-sm text-slate-400">Nächster: Filterwechsel Balkonkraftwerk am 18.05.</p>
         </div>
 
-        <div className="card p-8 group hover:border-red-500/50 transition-all">
-          <div className="flex items-center justify-between mb-6">
+        <div className="card group p-5 transition-all hover:border-red-500/50 sm:p-6 lg:p-8">
+          <div className="mb-4 flex items-center justify-between sm:mb-5 lg:mb-6">
             <div className="text-red-500">
-              <Wrench className="w-8 h-8" />
+              <Wrench className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
-            <div className="text-5xl font-semibold tabular-nums tracking-tighter text-red-400">{overdueMaintenances ?? 0}</div>
+            <div className="text-4xl font-semibold tabular-nums tracking-tighter text-red-400 lg:text-5xl">{overdueMaintenances ?? 0}</div>
           </div>
-          <div className="font-semibold text-xl">Überfällige Wartungen</div>
-          <p className="text-slate-400 mt-1.5 text-sm">{(overdueMaintenances ?? 0) > 0 ? 'Bitte bald einen Termin vereinbaren!' : 'Alle Wartungen sind aktuell.'}</p>
+          <div className="text-lg font-semibold sm:text-xl">Überfällige Wartungen</div>
+          <p className="mt-1.5 text-sm text-slate-400">
+            {(overdueMaintenances ?? 0) > 0 ? 'Bitte bald einen Termin vereinbaren!' : 'Alle Wartungen sind aktuell.'}
+          </p>
         </div>
 
-        <div className="card p-8 group hover:border-emerald-500/50 transition-all">
-          <div className="flex items-center justify-between mb-6">
+        <div className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6 lg:p-8">
+          <div className="mb-4 flex items-center justify-between sm:mb-5 lg:mb-6">
             <div className="text-emerald-500">
-              <FileText className="w-8 h-8" />
+              <FileText className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
-            <div className="text-5xl font-semibold tabular-nums tracking-tighter text-emerald-400">{openDocuments}</div>
+            <div className="text-4xl font-semibold tabular-nums tracking-tighter text-emerald-400 lg:text-5xl">{openDocuments}</div>
           </div>
-          <div className="font-semibold text-xl">Sie haben {openDocuments} neue Dokumente</div>
-          <p className="text-slate-400 mt-1.5 text-sm">Rechnung &amp; Servicebericht verfügbar</p>
+          <div className="text-lg font-semibold sm:text-xl">Sie haben {openDocuments} neue Dokumente</div>
+          <p className="mt-1.5 text-sm text-slate-400">Rechnung &amp; Servicebericht verfügbar</p>
         </div>
       </div>
 
       {/* Objekt-spezifische Dashboard-Widgets */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight">Ihre Objekte im Überblick</h2>
+      <div className="mb-6 lg:mb-10">
+        <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Ihre Objekte im Überblick</h2>
           <Link href="/dashboard/objects" className="text-sm text-emerald-500 hover:underline flex items-center gap-1">
             Alle Objekte verwalten <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
           {objects.length > 0 ? (
             objects.map((obj) => {
               const objAssets = assets.filter(a => a.object_id === obj.id)
@@ -178,10 +186,10 @@ export default async function DashboardOverview() {
                 .sort((a, b) => new Date(a.next_maintenance_due!).getTime() - new Date(b.next_maintenance_due!).getTime())[0]
 
               return (
-                <div key={obj.id} className="card p-6 hover:border-emerald-500/50 transition-all group">
-                  <div className="flex items-start justify-between mb-4">
+                <div key={obj.id} className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6">
+                  <div className="mb-4 flex items-start justify-between">
                     <div>
-                      <div className="font-semibold text-xl tracking-tight group-hover:text-emerald-400 transition-colors">{obj.name}</div>
+                      <div className="text-lg font-semibold tracking-tight transition-colors group-hover:text-emerald-400 sm:text-xl">{obj.name}</div>
                       {(obj.street || obj.city) && (
                         <div className="text-sm text-slate-400 flex items-center gap-1 mt-1">
                           <MapPin className="w-3.5 h-3.5" /> {[obj.street, obj.city].filter(Boolean).join(', ')}
@@ -218,7 +226,7 @@ export default async function DashboardOverview() {
               )
             })
           ) : (
-            <div className="col-span-3 card p-8 text-center text-slate-400">
+            <div className="card col-span-3 p-5 text-center text-sm text-slate-400 sm:p-8 sm:text-base">
               Noch keine Objekte angelegt. <Link href="/dashboard/objects/new" className="text-emerald-400 hover:underline">Jetzt erstes Objekt anlegen →</Link>
             </div>
           )}
@@ -226,29 +234,39 @@ export default async function DashboardOverview() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight">Schnellzugriff</h2>
+      <div className="mb-6 lg:mb-10">
+        <div className="mb-4 flex items-center justify-between sm:mb-6">
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Schnellzugriff</h2>
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-6">
-          <Link href="/dashboard/assets/new" className="card p-8 group flex items-center justify-between hover:border-emerald-500 transition-all">
-            <div>
-              <div className="font-semibold text-2xl mb-2">Neue Anlage hinzufügen</div>
-              <p className="text-slate-400">Foto hochladen → Grok erkennt automatisch Balkonkraftwerk, Wärmepumpe etc.</p>
+
+        <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+          <Link
+            href="/dashboard/assets/new"
+            className="card group flex flex-col gap-4 p-5 transition-all hover:border-emerald-500 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+          >
+            <div className="min-w-0">
+              <div className="mb-1 text-lg font-semibold sm:text-2xl sm:mb-2">Neue Anlage hinzufügen</div>
+              <p className="text-sm text-slate-400 sm:text-base">
+                Foto hochladen → Grok erkennt automatisch Balkonkraftwerk, Wärmepumpe etc.
+              </p>
             </div>
-            <div className="w-14 h-14 bg-emerald-600/10 rounded-2xl flex items-center justify-center group-hover:bg-emerald-600/20 transition-all">
-              <Plus className="w-7 h-7 text-emerald-500" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-2xl bg-emerald-600/10 transition-all group-hover:bg-emerald-600/20 sm:h-14 sm:w-14 sm:self-center">
+              <Plus className="h-6 w-6 text-emerald-500 sm:h-7 sm:w-7" />
             </div>
           </Link>
 
-          <Link href="/dashboard/objects" className="card p-8 group flex items-center justify-between hover:border-emerald-500 transition-all">
-            <div>
-              <div className="font-semibold text-2xl mb-2">Objekte verwalten</div>
-              <p className="text-slate-400">Haus, Wohnung oder Ferienimmobilie – alle Ihre Objekte auf einen Blick.</p>
+          <Link
+            href="/dashboard/objects"
+            className="card group flex flex-col gap-4 p-5 transition-all hover:border-emerald-500 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+          >
+            <div className="min-w-0">
+              <div className="mb-1 text-lg font-semibold sm:text-2xl sm:mb-2">Objekte verwalten</div>
+              <p className="text-sm text-slate-400 sm:text-base">
+                Haus, Wohnung oder Ferienimmobilie – alle Ihre Objekte auf einen Blick.
+              </p>
             </div>
-            <div className="w-14 h-14 bg-emerald-600/10 rounded-2xl flex items-center justify-center group-hover:bg-emerald-600/20 transition-all">
-              <ArrowRight className="w-7 h-7 text-emerald-500" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center self-end rounded-2xl bg-emerald-600/10 transition-all group-hover:bg-emerald-600/20 sm:h-14 sm:w-14 sm:self-center">
+              <ArrowRight className="h-6 w-6 text-emerald-500 sm:h-7 sm:w-7" />
             </div>
           </Link>
         </div>
@@ -256,31 +274,34 @@ export default async function DashboardOverview() {
 
       {/* Recent Activity */}
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight">Letzte Aktivitäten</h2>
+        <div className="mb-4 flex items-center justify-between sm:mb-6">
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Letzte Aktivitäten</h2>
           <Link href="/dashboard/documents" className="text-sm text-emerald-500 hover:underline flex items-center gap-1">
             Alle ansehen <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
-        <div className="card p-8">
-          <div className="space-y-6">
+        <div className="card p-5 sm:p-6 lg:p-8">
+          <div className="space-y-4 sm:space-y-6">
             {[
               { date: '08.05.2026', title: 'Servicebericht Balkonkraftwerk', type: 'report', status: 'Neu' },
               { date: '02.05.2026', title: 'Rechnung #INV-2026-047', type: 'invoice', status: 'Bezahlt' },
               { date: '28.04.2026', title: 'Wartung Wärmepumpe abgeschlossen', type: 'report', status: 'Abgeschlossen' },
             ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between py-4 border-b border-slate-800 last:border-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center">
+              <div
+                key={index}
+                className="flex flex-col gap-2 border-b border-slate-800 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:py-4"
+              >
+                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-800 sm:h-12 sm:w-12">
                     {item.type === 'report' ? <FileText className="w-5 h-5 text-emerald-500" /> : <FileText className="w-5 h-5 text-blue-400" />}
                   </div>
-                  <div>
-                    <div className="font-medium">{item.title}</div>
-                    <div className="text-sm text-slate-500">{item.date}</div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium sm:text-base">{item.title}</div>
+                    <div className="text-xs text-slate-500 sm:text-sm">{item.date}</div>
                   </div>
                 </div>
-                <div className={`px-4 py-1.5 text-xs font-medium rounded-full ${
+                <div className={`self-start px-3 py-1 text-xs font-medium rounded-full sm:self-center sm:px-4 sm:py-1.5 ${
                   item.status === 'Neu' ? 'bg-emerald-600/20 text-emerald-400' : 'bg-slate-700 text-slate-300'
                 }`}>
                   {item.status}

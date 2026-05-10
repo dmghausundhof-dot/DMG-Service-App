@@ -245,8 +245,8 @@ function NewAppointmentForm() {
 
   if (loadingObjects) {
     return (
-      <div className="max-w-3xl mx-auto p-8 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+      <div className="mx-auto flex max-w-3xl justify-center px-4 py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     )
   }
@@ -260,13 +260,13 @@ function NewAppointmentForm() {
         >
           <ArrowLeft className="w-4 h-4" /> Zurück zu Terminen
         </Link>
-        <div className="card p-12 text-center">
-          <Calendar className="w-16 h-16 text-slate-600 mx-auto mb-6" />
-          <h1 className="text-4xl font-semibold tracking-tighter mb-4">Kein Objekt vorhanden</h1>
-          <p className="text-xl text-slate-400 mb-8">
+        <div className="card p-6 text-center sm:p-10 lg:p-12">
+          <Calendar className="mx-auto mb-5 h-14 w-14 text-slate-600 sm:mb-6 sm:h-16 sm:w-16" />
+          <h1 className="mb-3 text-2xl font-semibold tracking-tighter sm:mb-4 sm:text-3xl lg:text-4xl">Kein Objekt vorhanden</h1>
+          <p className="mb-6 text-base text-slate-400 sm:mb-8 sm:text-lg">
             Sie benötigen mindestens ein Objekt, um einen Termin anzufordern.
           </p>
-          <Link href="/dashboard/objects/new" className="btn-primary inline-flex items-center gap-2">
+          <Link href="/dashboard/objects/new" className="btn-primary inline-flex items-center justify-center gap-2">
             Erstes Objekt anlegen
           </Link>
         </div>
@@ -275,22 +275,22 @@ function NewAppointmentForm() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 pb-8">
+    <div className="mx-auto max-w-3xl pb-6 sm:pb-8">
       <Link
         href="/dashboard/appointments"
-        className="flex items-center gap-2 text-slate-400 hover:text-white mb-8"
+        className="mb-5 flex items-center gap-2 text-slate-400 hover:text-white sm:mb-8"
       >
-        <ArrowLeft className="w-4 h-4" /> Zurück zu Terminen
+        <ArrowLeft className="h-4 w-4 shrink-0" /> Zurück zu Terminen
       </Link>
 
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-emerald-600/10 rounded-3xl flex items-center justify-center">
-            <Calendar className="w-8 h-8 text-emerald-500" />
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-emerald-600/10 sm:h-16 sm:w-16">
+            <Calendar className="h-8 w-8 text-emerald-500" />
           </div>
-          <div>
-            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tighter">Neuen Termin anfragen</h1>
-            <p className="text-lg sm:text-xl text-slate-400 mt-2">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Neuen Termin anfragen</h1>
+            <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
               DMG plant Datum und Zeit; optional Fotos anhängen (z. B. Anlage, Fehler).
             </p>
           </div>
@@ -332,15 +332,15 @@ function NewAppointmentForm() {
         />
       </div>
 
-      <div className="card p-6 sm:p-8">
-        <div className="space-y-8">
+      <div className="card p-5 sm:p-6 lg:p-8">
+        <div className="space-y-6 sm:space-y-8">
           <div>
             <label className="text-sm text-slate-300 block mb-2">Objekt *</label>
             <select
               name="object_id"
               value={formData.object_id}
               onChange={handleInputChange}
-              className="input w-full text-lg"
+              className="input w-full text-base sm:text-lg"
               required
             >
               {objects.map((obj) => (
@@ -435,7 +435,7 @@ function NewAppointmentForm() {
               name="service_type"
               value={formData.service_type}
               onChange={handleInputChange}
-              className="input w-full text-lg"
+              className="input w-full text-base sm:text-lg"
               required
             >
               {serviceTypes.map((type) => (
@@ -444,12 +444,6 @@ function NewAppointmentForm() {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-5">
-            <p className="text-sm text-slate-300 leading-relaxed">
-              <strong className="text-white">Zeitpunkt:</strong> Sie schlagen hier keinen Termin mehr vor – nach Ihrer Anfrage plant DMG das passende Datum und Zeitfenster und sagt diese per E-Mail, WhatsApp oder im Portal zu. Allgemeine Wünsche (z. B. „nach 17 Uhr“) können Sie unten unter Notizen eintragen.
-            </p>
           </div>
 
           <div>
@@ -477,15 +471,15 @@ function NewAppointmentForm() {
           </div>
         </div>
 
-        <div className="mt-10 pt-8 border-t border-slate-800 flex gap-4">
-          <Link href="/dashboard/appointments" className="btn-secondary flex-1 py-3.5 text-center">
+        <div className="mt-8 flex flex-col gap-3 border-t border-slate-800 pt-6 sm:mt-10 sm:flex-row sm:gap-4 sm:pt-8">
+          <Link href="/dashboard/appointments" className="btn-secondary order-2 flex-1 py-3.5 text-center sm:order-1">
             Abbrechen
           </Link>
           <button
             type="button"
             onClick={createAppointment}
             disabled={isSaving || !formData.object_id}
-            className="btn-primary flex-1 py-3.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary order-1 flex flex-1 items-center justify-center gap-2 py-3.5 disabled:cursor-not-allowed disabled:opacity-50 sm:order-2"
           >
             {isSaving ? (
               <>
@@ -515,8 +509,8 @@ export default function NewAppointmentPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-3xl mx-auto p-8 flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+        <div className="mx-auto flex max-w-3xl justify-center px-4 py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
         </div>
       }
     >
