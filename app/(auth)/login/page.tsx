@@ -1,12 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const accountDeleted = searchParams.get('deleted') === '1'
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -56,6 +60,11 @@ export default function LoginPage() {
         </div>
 
         <div className="card p-5 sm:p-8 lg:p-10">
+          {accountDeleted ? (
+            <div className="mb-6 rounded-2xl border border-emerald-900/50 bg-emerald-950/40 px-4 py-3 text-center text-sm text-emerald-200">
+              Ihr Konto und die zugehörigen Daten wurden gelöscht. Sie können sich bei Bedarf erneut registrieren.
+            </div>
+          ) : null}
           <div className="mb-6 text-center sm:mb-8">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">Willkommen zurück</h1>
             <p className="mt-2 text-sm text-slate-400 sm:mt-3 sm:text-base">Melden Sie sich in Ihrem Portal an</p>
@@ -139,5 +148,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 px-4 text-slate-400">
+          Laden…
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }

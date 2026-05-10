@@ -154,6 +154,16 @@ export default function DatenschutzPage() {
               Zur Geltendmachung wenden Sie sich an die oben genannten Kontaktdaten. Außerdem haben Sie das Recht,
               Beschwerde bei einer Datenschutz-Aufsichtsbehörde einzureichen.
             </p>
+            <p className="mt-3">
+              <strong className="font-medium text-slate-200">Löschung des Nutzerkontos (Art.&nbsp;17 DSGVO):</strong> Im
+              geschützten Bereich unter <strong className="font-medium text-slate-200">Profil</strong> können Sie nach
+              Prüfung Ihres Passworts und ausdrücklicher Bestätigung Ihr Konto und die damit im Portal gespeicherten
+              personenbezogenen Daten unwiderruflich löschen. Technisch umfasst dies u.&nbsp;a. die Entfernung Ihres
+              Nutzerzugangs (Authentifizierung), die Löschung der zugehörigen Datensätze in der Anwendungsdatenbank sowie
+              die Beseitigung zugehöriger Dateien im Speicher (z.&nbsp;B. hochgeladene Bilder und Dokumente), soweit keine
+              gesetzlichen Aufbewahrungspflichten oder sonstigen in Art.&nbsp;17 Abs.&nbsp;3 DSGVO genannten Gründe
+              entgegenstehen.
+            </p>
           </section>
 
           <section>

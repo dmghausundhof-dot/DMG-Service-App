@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
-import { User, Save, ArrowLeft, Lock, Bell, Mail, MessageCircle, FileUp } from 'lucide-react'
+import { User, Save, ArrowLeft, Lock, Bell, Mail, MessageCircle, FileUp, Trash2, Loader2 } from 'lucide-react'
+import { DELETE_ACCOUNT_CONFIRM_PHRASE } from '@/lib/delete-account-constants'
 import Link from 'next/link'
 
 export default function ProfilePage() {
@@ -28,6 +29,11 @@ export default function ProfilePage() {
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadProfile() {
@@ -96,6 +102,40 @@ export default function ProfilePage() {
       setTimeout(() => setMessage(null), 3000)
     }
     setSaving(false)
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null)
+    if (deleteConfirmText.trim() !== DELETE_ACCOUNT_CONFIRM_PHRASE) {
+      setDeleteError('Bitte den Bestätigungstext exakt wie vorgegeben eingeben.')
+      return
+    }
+    if (!deletePassword) {
+      setDeleteError('Bitte Ihr aktuelles Passwort eingeben.')
+      return
+    }
+    setDeleteLoading(true)
+    try {
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          password: deletePassword,
+          confirmText: deleteConfirmText.trim(),
+        }),
+      })
+      const data = (await res.json()) as { error?: string }
+      if (!res.ok) {
+        setDeleteError(data.error || 'Löschung fehlgeschlagen.')
+        setDeleteLoading(false)
+        return
+      }
+      await supabase.auth.signOut()
+      window.location.href = '/login?deleted=1'
+    } catch {
+      setDeleteError('Netzwerkfehler.')
+      setDeleteLoading(false)
+    }
   }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -458,6 +498,87 @@ export default function ProfilePage() {
               </button>
             </div>
 
+          </div>
+        </div>
+      </div>
+
+      {/* Konto löschen (Art. 17 DSGVO) */}
+      <div className="mt-10 sm:mt-12">
+        <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-950/50 sm:h-14 sm:w-14">
+            <Trash2 className="h-6 w-6 text-red-400 sm:h-7 sm:w-7" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold tracking-[2px] text-red-400/90 sm:text-sm">KONTO</div>
+            <h2 className="text-2xl font-semibold tracking-tighter sm:text-3xl lg:text-4xl">Konto und Daten löschen</h2>
+            <p className="mt-1 text-base text-slate-400 sm:text-lg">
+              Unwiderrufliche Löschung Ihres Zugangs, Profils, Objekte, Termine, Dokumente und zugehöriger Dateien.
+            </p>
+          </div>
+        </div>
+
+        <div className="card max-w-2xl border border-red-900/40 bg-red-950/10 p-5 sm:p-6 lg:p-8">
+          {isAdmin ? (
+            <p className="mb-4 rounded-xl border border-amber-900/50 bg-amber-950/30 p-3 text-sm text-amber-200">
+              Hinweis: Ihr Konto hat Administratorrechte. Bei Löschung entfallen ggf. interne Zusatzfunktionen – nur
+              fortfahren, wenn Sie sich sicher sind.
+            </p>
+          ) : null}
+          <p className="mb-4 text-sm text-slate-400">
+            Die Löschung kann nicht rückgängig gemacht werden. Es werden u. a. Ihr Login, Kontaktdaten, Einträge zu
+            Objekten/Anlagen/Terminen und Dateien in unserem Speicher entfernt, soweit keine gesetzlichen
+            Aufbewahrungspflichten entgegenstehen.
+          </p>
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">Aktuelles Passwort (zur Bestätigung)</label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                autoComplete="current-password"
+                className="input w-full py-3 text-base"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                Bestätigung (exakt eingeben)
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="input w-full py-3 font-mono text-sm text-slate-200"
+                placeholder={DELETE_ACCOUNT_CONFIRM_PHRASE}
+                autoComplete="off"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Tippen Sie: <code className="rounded bg-slate-800 px-1 py-0.5">{DELETE_ACCOUNT_CONFIRM_PHRASE}</code>
+              </p>
+            </div>
+          </div>
+          {deleteError ? (
+            <div className="mt-4 rounded-2xl border border-red-900/60 bg-red-950/50 p-3 text-sm text-red-300">
+              {deleteError}
+            </div>
+          ) : null}
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deleteLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-800 bg-red-950/60 px-4 py-3.5 text-sm font-semibold text-red-100 transition hover:bg-red-900/70 disabled:opacity-50 sm:py-4 sm:text-base"
+            >
+              {deleteLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 shrink-0 animate-spin" /> Wird gelöscht…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-5 w-5 shrink-0 text-red-300" /> Konto unwiderruflich löschen
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
