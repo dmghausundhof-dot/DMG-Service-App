@@ -11,8 +11,7 @@ export const LEGAL_SITE = {
   /** Einsatzgebiet wie auf dmgservice.org */
   serviceRegion: 'Wiesloch und die Rhein-Neckar-Region',
 
-  /** Inhaber wie auf der öffentlichen Website angegeben („… mit mir – Luka“). */
-  proprietorDisplayName: 'Luka',
+  proprietorDisplayName: 'Luka Basic',
 
   street: 'Sandbrunnenweg 39',
   zip: '69168',
