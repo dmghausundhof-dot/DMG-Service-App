@@ -206,6 +206,17 @@ export default function LandingPage() {
             <div className="font-semibold mb-4 text-sm tracking-widest text-slate-500">DMG SERVICE</div>
             <div>Sandbrunnenweg 39<br />69168 Wiesloch</div>
             <div className="mt-6 text-xs">© {new Date().getFullYear()} DMG Service. Alle Rechte vorbehalten.</div>
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              <Link href="/impressum" className="text-slate-500 hover:text-emerald-400 transition">
+                Impressum
+              </Link>
+              <Link href="/datenschutz" className="text-slate-500 hover:text-emerald-400 transition">
+                Datenschutz
+              </Link>
+              <Link href="/agb" className="text-slate-500 hover:text-emerald-400 transition">
+                Nutzungsbedingungen
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

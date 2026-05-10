@@ -186,17 +186,31 @@ export default function DashboardShell({
         </main>
 
         <footer className="flex shrink-0 flex-col gap-1.5 border-t border-slate-800 bg-slate-900 px-4 py-2.5 text-[11px] leading-snug text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:px-6 sm:py-3 sm:text-xs">
-          <div className="truncate sm:truncate-none">DMG Service • Wiesloch • Rhein-Neckar</div>
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+            <span className="truncate sm:truncate-none">DMG Service • Wiesloch • Rhein-Neckar</span>
+            <span className="hidden text-slate-600 sm:inline">·</span>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-slate-600">
+              <Link href="/impressum" className="hover:text-emerald-400 transition">
+                Impressum
+              </Link>
+              <Link href="/datenschutz" className="hover:text-emerald-400 transition">
+                Datenschutz
+              </Link>
+              <Link href="/agb" className="hover:text-emerald-400 transition">
+                AGB
+              </Link>
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
             <a
-              href="tel:+49123456789"
+              href="tel:+4917656193281"
               className="whitespace-nowrap hover:text-emerald-400 transition"
-              title="0176 12345678"
+              title="Anruf"
             >
               <span className="sm:hidden">📞 Anruf</span>
-              <span className="hidden sm:inline">📞 0176 12345678</span>
+              <span className="hidden sm:inline">📞 0176 56193281</span>
             </a>
-            <a href="https://wa.me/4917612345678" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap hover:text-emerald-400 transition">
+            <a href="https://wa.me/4917656193281" target="_blank" rel="noopener noreferrer" className="whitespace-nowrap hover:text-emerald-400 transition">
               💬 WhatsApp
             </a>
           </div>

@@ -14,11 +14,16 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [acceptedLegal, setAcceptedLegal] = useState(false)
 
   const supabase = createClient()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!acceptedLegal) {
+      setError('Bitte stimmen Sie den Nutzungsbedingungen und der Datenschutzerklärung zu.')
+      return
+    }
     setLoading(true)
     setError('')
 
@@ -158,9 +163,34 @@ export default function RegisterPage() {
               </div>
             )}
 
+            <div className="flex gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+              <input
+                id="accept-legal"
+                type="checkbox"
+                checked={acceptedLegal}
+                onChange={(e) => setAcceptedLegal(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-600 text-emerald-600 focus:ring-emerald-500"
+                required
+              />
+              <label htmlFor="accept-legal" className="text-xs leading-relaxed text-slate-400 sm:text-sm">
+                Ich habe die{' '}
+                <Link href="/agb" className="text-emerald-400 underline decoration-emerald-500/40 hover:text-emerald-300">
+                  Nutzungsbedingungen
+                </Link>{' '}
+                und die{' '}
+                <Link
+                  href="/datenschutz"
+                  className="text-emerald-400 underline decoration-emerald-500/40 hover:text-emerald-300"
+                >
+                  Datenschutzerklärung
+                </Link>{' '}
+                gelesen und stimme ihnen zu. *
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !acceptedLegal}
               className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 disabled:opacity-70 sm:py-4 sm:text-lg"
             >
               {loading ? 'Konto wird erstellt...' : 'Kostenlos registrieren'}
@@ -176,8 +206,14 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <p className="mx-auto mt-6 max-w-xs text-center text-[11px] text-slate-500 sm:mt-8 sm:text-xs">
-          Mit der Registrierung stimmen Sie unseren Nutzungsbedingungen und der Datenschutzerklärung zu.
+        <p className="mx-auto mt-6 max-w-sm text-center text-[11px] text-slate-600 sm:mt-8 sm:text-xs">
+          <Link href="/impressum" className="text-slate-500 underline-offset-2 hover:text-slate-400 hover:underline">
+            Impressum
+          </Link>
+          {' · '}
+          <Link href="/datenschutz" className="text-slate-500 underline-offset-2 hover:text-slate-400 hover:underline">
+            Datenschutz
+          </Link>
         </p>
       </div>
     </div>
