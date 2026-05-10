@@ -13,11 +13,9 @@ import {
   Sparkles,
   PencilLine,
   Save,
-  Wrench,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
-import type { MaintenanceGuide } from '@/lib/maintenance-guide'
 
 const CATEGORIES = [
   'Balkonkraftwerk',
@@ -99,7 +97,6 @@ function NewAssetForm() {
   const [mergedAnalysis, setMergedAnalysis] = useState<AnalysisFields | null>(null)
   const [webSearchUsed, setWebSearchUsed] = useState(false)
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null)
-  const [maintenanceGuide, setMaintenanceGuide] = useState<MaintenanceGuide | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -135,7 +132,6 @@ function NewAssetForm() {
           visionAnalysis?: AnalysisFields
           webEnrichment?: AnalysisFields | null
           webSearchUsed?: boolean
-          maintenanceGuide?: MaintenanceGuide | null
           message?: string
           error?: string
           detail?: string
@@ -156,7 +152,6 @@ function NewAssetForm() {
         setMergedAnalysis(data.merged)
         setWebSearchUsed(!!data.webSearchUsed)
         setAnalysisMessage(data.message ?? null)
-        setMaintenanceGuide(data.maintenanceGuide ?? null)
         setFormData((prev) => ({
           ...prev,
           ...applyMergedToForm(data.merged!),
@@ -194,7 +189,6 @@ function NewAssetForm() {
         setMergedAnalysis(null)
         setAnalysisMessage(null)
         setWebSearchUsed(false)
-        setMaintenanceGuide(null)
         setPreferManualOnly(false)
         queueMicrotask(() => {
           void analyzeWithData(b64, mime)
@@ -294,10 +288,6 @@ function NewAssetForm() {
           mergedAnalysis && typeof mergedAnalysis.filter_type === 'string'
             ? mergedAnalysis.filter_type
             : null,
-        ...(maintenanceGuide?.typical_interval_months != null &&
-        Number.isFinite(maintenanceGuide.typical_interval_months)
-          ? { maintenance_interval_months: Math.min(120, Math.max(1, Math.round(maintenanceGuide.typical_interval_months))) }
-          : {}),
         image_url: publicUrl,
         ai_analysis:
           mergedAnalysis != null ? { ...(mergedAnalysis as object) } : visionAnalysis ?? null,
@@ -311,7 +301,6 @@ function NewAssetForm() {
             : typeof visionAnalysis?.confidence === 'number'
               ? visionAnalysis.confidence
               : null,
-        ai_maintenance_guide: maintenanceGuide ?? null,
         user_confirmed: true,
         confirmed_at: new Date().toISOString(),
         notes: formData.notes.trim() || null,
@@ -417,7 +406,6 @@ function NewAssetForm() {
                   setMergedAnalysis(null)
                   setAnalysisMessage(null)
                   setWebSearchUsed(false)
-                  setMaintenanceGuide(null)
                   setPreferManualOnly(false)
                 }}
                 className="text-xs text-red-400 hover:text-red-300"
@@ -505,45 +493,6 @@ function NewAssetForm() {
               </div>
               {analysisMessage ? <p className="text-xs text-slate-500 mt-4">{analysisMessage}</p> : null}
             </div>
-
-            {maintenanceGuide ? (
-              <div className="rounded-2xl border border-amber-900/50 bg-amber-950/20 p-4 sm:rounded-3xl sm:p-6">
-                <div className="mb-3 flex flex-wrap items-center gap-2 font-semibold text-amber-200/95">
-                  <Wrench className="h-5 w-5 shrink-0 text-amber-400" />
-                  KI-Wartung &amp; Pflege (Websuche, unverbindlich)
-                </div>
-                <p className="text-sm leading-relaxed text-slate-300">{maintenanceGuide.summary}</p>
-                {typeof maintenanceGuide.typical_interval_months === 'number' ? (
-                  <p className="mt-3 text-xs text-slate-500">
-                    Richtintervall laut Recherche: ca. {maintenanceGuide.typical_interval_months} Monate (wird beim
-                    Speichern als Wartungsintervall in der Anlage hinterlegt).
-                  </p>
-                ) : null}
-                {maintenanceGuide.checklist.length > 0 ? (
-                  <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-slate-400">
-                    {maintenanceGuide.checklist.map((c, i) => (
-                      <li key={i}>{c}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {maintenanceGuide.safety_notes ? (
-                  <p className="mt-3 text-xs text-amber-300/90">{maintenanceGuide.safety_notes}</p>
-                ) : null}
-                {maintenanceGuide.when_to_call_professional ? (
-                  <p className="mt-2 text-xs text-slate-500">{maintenanceGuide.when_to_call_professional}</p>
-                ) : null}
-                {maintenanceGuide.sources?.length ? (
-                  <p className="mt-3 text-[11px] text-slate-600">
-                    Quellen: {maintenanceGuide.sources.slice(0, 5).join(' · ')}
-                  </p>
-                ) : null}
-                <p className="mt-4 text-[11px] text-slate-600">
-                  Keine Gewähr; maßgeblich bleiben Herstellerunterlagen und Ihr Fachbetrieb. Mit „Anlage speichern“ wird
-                  das als strukturierte Anlage gesichert – danach können Sie über „Wartung planen“ einen Termin mit
-                  vorausgefülltem Text anfragen.
-                </p>
-              </div>
-            ) : null}
 
             {(visionAnalysis || webEnrichment) && (
               <details className="rounded-2xl border border-slate-800 bg-slate-900/40 text-sm">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Plus, Wrench, Calendar, AlertTriangle, CheckCircle, Search, X } from 'lucide-react'
+import { Plus, Wrench, Calendar, CheckCircle, Search, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import jsPDF from 'jspdf'
@@ -17,9 +17,6 @@ interface Asset {
   category: string
   manufacturer: string | null
   model: string | null
-  last_maintenance: string | null
-  next_maintenance_due: string | null
-  maintenance_interval_months: number | null
   image_url: string | null
   object_id: string
   objects: {
@@ -28,45 +25,12 @@ interface Asset {
   } | null
 }
 
-function getAssetStatus(asset: Asset) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  if (asset.next_maintenance_due) {
-    const dueDate = new Date(asset.next_maintenance_due)
-    if (dueDate < today) {
-      return { 
-        label: 'Wartung überfällig', 
-        color: 'red', 
-        bg: 'bg-red-600/20 text-red-400 border-red-900/50',
-        icon: AlertTriangle 
-      }
-    }
-    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 3600 * 24))
-    if (diffDays <= 30) {
-      return { 
-        label: `Wartung in ${diffDays} Tagen`, 
-        color: 'amber', 
-        bg: 'bg-amber-600/20 text-amber-400 border-amber-900/50',
-        icon: Calendar 
-      }
-    }
-  }
-
-  if (asset.last_maintenance) {
-    return { 
-      label: 'Aktiv', 
-      color: 'emerald', 
-      bg: 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50',
-      icon: CheckCircle 
-    }
-  }
-
-  return { 
-    label: 'Neu', 
-    color: 'blue', 
-    bg: 'bg-blue-600/20 text-blue-400 border-blue-900/50',
-    icon: Wrench 
+function getAssetStatus(_asset: Asset) {
+  return {
+    label: 'Erfasst',
+    color: 'emerald' as const,
+    bg: 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50',
+    icon: CheckCircle,
   }
 }
 
@@ -106,15 +70,11 @@ export default function AssetsListPage() {
             category, 
             manufacturer, 
             model, 
-            last_maintenance, 
-            next_maintenance_due, 
-            maintenance_interval_months,
             image_url, 
             object_id,
             objects (name, city)
           `, { count: 'exact' })
           .in('object_id', idFilter)
-          .order('next_maintenance_due', { ascending: true, nullsFirst: false })
           .order('created_at', { ascending: false })
 
         if (objectFilter) {
@@ -159,7 +119,7 @@ export default function AssetsListPage() {
 
   const exportToPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-    const pdfColWidths = [28, 23, 39, 34, 26, 22, 29, 31] as const
+    const pdfColWidths = [42, 38, 62, 52, 28] as const
     const pageWidth = 297
     const pageHeight = 210
     const margin = 15
@@ -212,16 +172,7 @@ export default function AssetsListPage() {
         yPos = 36
       }
       
-      const headers = [
-        'Name',
-        'Kategorie',
-        'Hersteller / Modell',
-        'Objekt / Ort',
-        'Status',
-        'Intervall',
-        'Letzte Wartung',
-        'Nächste Wartung',
-      ]
+      const headers = ['Name', 'Kategorie', 'Hersteller / Modell', 'Objekt / Ort', 'Status']
 
       doc.setFillColor(16, 185, 129)
       doc.rect(margin, yPos, usableWidth, 6.5, 'F')
@@ -267,9 +218,6 @@ export default function AssetsListPage() {
       const status = getAssetStatus(asset)
       const objectName = asset.objects ? `${asset.objects.name}${asset.objects.city ? ' • ' + asset.objects.city : ''}` : '—'
       const herstellerModell = `${asset.manufacturer || '—'}${asset.model ? ' / ' + asset.model : ''}`
-      const iv = asset.maintenance_interval_months
-      const intervalStr =
-        iv != null && Number.isFinite(Number(iv)) ? `${Math.round(Number(iv))} Mo.` : '—'
 
       const rowData = [
         asset.name.length > 20 ? asset.name.substring(0, 17) + '...' : asset.name,
@@ -277,9 +225,6 @@ export default function AssetsListPage() {
         herstellerModell.length > 24 ? herstellerModell.substring(0, 21) + '...' : herstellerModell,
         objectName.length > 22 ? objectName.substring(0, 19) + '...' : objectName,
         status.label,
-        intervalStr,
-        asset.last_maintenance ? new Date(asset.last_maintenance).toLocaleDateString('de-DE') : '—',
-        asset.next_maintenance_due ? new Date(asset.next_maintenance_due).toLocaleDateString('de-DE') : 'Nicht geplant',
       ]
       
       // Alternating row background
@@ -291,11 +236,7 @@ export default function AssetsListPage() {
       let rowXPos = margin + 2
       rowData.forEach((cell, i) => {
         if (i === 4) {
-          // Status
-          if (status.color === 'red') doc.setTextColor(185, 28, 28)
-          else if (status.color === 'amber') doc.setTextColor(180, 83, 9)
-          else if (status.color === 'emerald') doc.setTextColor(16, 185, 129)
-          else doc.setTextColor(30, 64, 175)
+          doc.setTextColor(16, 185, 129)
         } else {
           doc.setTextColor(31, 41, 55)
         }
@@ -332,10 +273,7 @@ export default function AssetsListPage() {
             {objectFilter ? (
               <>Gefiltert • {filteredAssets.length} Anlagen{searchTerm && ` (Suche: "${searchTerm}")`}</>
             ) : (
-              <>{totalAssets} wartungsintensive Anlagen • {filteredAssets.filter(a => {
-                const status = getAssetStatus(a)
-                return status.label.includes('fällig') || status.label.includes('überfällig')
-              }).length} benötigen Aufmerksamkeit</>
+              <>{totalAssets} Anlagen erfasst</>
             )}
           </p>
         </div>
@@ -436,11 +374,6 @@ export default function AssetsListPage() {
             const status = getAssetStatus(asset)
             const StatusIcon = status.icon
 
-            const intervalMonths =
-              asset.maintenance_interval_months != null && Number.isFinite(asset.maintenance_interval_months)
-                ? Math.round(asset.maintenance_interval_months)
-                : null
-
             return (
               <div
                 key={asset.id}
@@ -488,7 +421,7 @@ export default function AssetsListPage() {
                       className="relative flex flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-500/35 bg-emerald-600 px-4 py-2.5 text-center text-sm font-medium text-white shadow-lg shadow-black/40 ring-2 ring-black/40 transition hover:bg-emerald-500 active:scale-[0.99] sm:text-sm"
                     >
                       <Calendar className="h-4 w-4 shrink-0 opacity-95" aria-hidden />
-                      Wartung planen
+                      Termin anfragen
                     </Link>
                     <Link
                       href={`/dashboard/assets/${asset.id}`}
@@ -521,27 +454,8 @@ export default function AssetsListPage() {
                     </p>
                   )}
 
-                  <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-                    <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 px-3 py-2.5">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Intervall</div>
-                      <div className="mt-1 font-semibold text-slate-100">
-                        {intervalMonths != null ? `${intervalMonths} Mon.` : '—'}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 px-3 py-2.5">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Letzte Wartung</div>
-                      <div className="mt-1 font-medium text-slate-200">
-                        {asset.last_maintenance ? new Date(asset.last_maintenance).toLocaleDateString('de-DE') : '—'}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 px-3 py-2.5">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Nächste Wartung</div>
-                      <div className="mt-1 font-medium text-slate-200">
-                        {asset.next_maintenance_due
-                          ? new Date(asset.next_maintenance_due).toLocaleDateString('de-DE')
-                          : 'Nicht geplant'}
-                      </div>
-                    </div>
+                  <div className="mt-4 rounded-xl border border-slate-800/80 bg-slate-950/35 px-3 py-2.5 text-sm text-slate-400">
+                    Kategorie: <span className="font-medium text-slate-200">{asset.category}</span>
                   </div>
                 </div>
               </div>

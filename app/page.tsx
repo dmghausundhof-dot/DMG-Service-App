@@ -98,8 +98,8 @@ export default function LandingPage() {
             },
             {
               icon: <Calendar className="w-7 h-7" />,
-              title: "Termine & Wartung",
-              desc: "Einfach Termine für Wartung, Filterwechsel oder Reparatur anfragen – mit optionalem Foto-Upload."
+              title: "Termine & Service",
+              desc: "Einfach Termine für Service, Montage oder Reparatur anfragen – mit optionalem Foto-Upload."
             },
             {
               icon: <Users className="w-7 h-7" />,
@@ -113,8 +113,8 @@ export default function LandingPage() {
             },
             {
               icon: <div className="text-3xl">🔔</div>,
-              title: "Wartungserinnerungen",
-              desc: "Automatische Erinnerungen per E-Mail oder WhatsApp – damit nichts vergessen wird."
+              title: "Terminübersicht",
+              desc: "Gebuchte und angefragte Termine im Kundenportal nachverfolgen."
             }
           ].map((feature, index) => (
             <div key={index} className="card group p-5 transition-all hover:border-emerald-900 sm:p-6 lg:p-8">
@@ -138,7 +138,7 @@ export default function LandingPage() {
             {[
               { step: "01", title: "Registrieren", desc: "Mit Ihrer E-Mail-Adresse und einem Passwort anmelden – in unter 2 Minuten." },
               { step: "02", title: "Objekte & Anlagen anlegen", desc: "Ihre Immobilien eintragen und Anlagen per Foto oder manuell hinzufügen." },
-              { step: "03", title: "Alles im Blick behalten", desc: "Termine buchen, Dokumente abrufen und Wartungen planen – jederzeit und überall." }
+              { step: "03", title: "Alles im Blick behalten", desc: "Termine buchen, Dokumente abrufen und Anlagen pflegen – jederzeit und überall." }
             ].map((item, i) => (
               <div key={i} className="relative">
                 <div className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 select-none text-[4.5rem] font-bold leading-none text-slate-800 sm:-top-10 sm:text-7xl md:text-[120px] md:-top-12">

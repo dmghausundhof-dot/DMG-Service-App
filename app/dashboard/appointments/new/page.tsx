@@ -20,11 +20,6 @@ import {
   APPOINTMENT_TIME_SLOTS as TIME_SLOTS,
   timeToMinutes,
 } from '@/lib/appointment-time-slots'
-import {
-  formatMaintenanceGuideForAppointment,
-  isMaintenanceGuide,
-} from '@/lib/maintenance-guide'
-
 interface ObjectOption {
   id: string
   name: string
@@ -147,7 +142,7 @@ function NewAppointmentForm() {
     async function hydrateFromAsset() {
       const { data: asset } = await supabase
         .from('assets')
-        .select('id, object_id, name, category, manufacturer, model, ai_maintenance_guide')
+        .select('id, object_id, name, category, manufacturer, model, notes')
         .eq('id', aid)
         .maybeSingle()
       if (cancelled || !asset || !objects.some((o) => o.id === asset.object_id)) return
@@ -156,21 +151,17 @@ function NewAppointmentForm() {
       setLinkedAssetId(asset.id)
 
       const baseDesc =
-        `Wartung für „${asset.name}“ (${asset.category}` +
+        `Termin zur Anlage „${asset.name}“ (${asset.category}` +
         (asset.manufacturer ? `, ${asset.manufacturer}` : '') +
         (asset.model ? ` ${asset.model}` : '') +
-        ') — bitte Kontrolle/Instandhaltung laut Auftrag.'
+        ') — bitte Rückruf oder Terminfreigabe.'
 
       setFormData((prev) => ({
         ...prev,
         object_id: asset.object_id,
-        service_type: 'Wartung',
+        service_type: 'Sonstiges',
         description: prev.description.trim() ? prev.description : baseDesc,
-        customer_notes:
-          prev.customer_notes.trim() ||
-          (asset.ai_maintenance_guide && isMaintenanceGuide(asset.ai_maintenance_guide)
-            ? formatMaintenanceGuideForAppointment(asset.ai_maintenance_guide)
-            : ''),
+        customer_notes: prev.customer_notes.trim() || (asset.notes?.trim() ?? ''),
       }))
     }
     void hydrateFromAsset()
@@ -402,7 +393,7 @@ function NewAppointmentForm() {
             <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
               Wunschdatum, Zeitfenster und optional Fotos.
               {linkedAssetId
-                ? ' Der Termin wird mit der ausgewählten Anlage und gespeicherten KI-Wartungshinweisen verknüpft.'
+                ? ' Der Termin wird mit der ausgewählten Anlage aus Ihrem Bestand verknüpft.'
                 : ''}
             </p>
           </div>

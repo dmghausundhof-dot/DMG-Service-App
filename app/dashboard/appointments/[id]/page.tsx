@@ -8,8 +8,6 @@ import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import DeleteConfirmation from '@/components/DeleteConfirmation'
 import { AppointmentCalendarExports } from '@/components/AppointmentCalendarExports'
-import { isMaintenanceGuide } from '@/lib/maintenance-guide'
-
 interface AttachmentMeta {
   url: string
   file_name?: string
@@ -28,7 +26,6 @@ interface LinkedAsset {
   category: string
   manufacturer: string | null
   model: string | null
-  ai_maintenance_guide: unknown | null
 }
 
 interface Appointment {
@@ -84,8 +81,7 @@ const APPOINTMENT_DETAIL_SELECT = `
     name,
     category,
     manufacturer,
-    model,
-    ai_maintenance_guide
+    model
   )
 `
 
@@ -590,12 +586,10 @@ export default function AppointmentDetailPage() {
                 : appointment.assets
               : null
             if (!la) return null
-            const g = la.ai_maintenance_guide
-            const parsed = g && isMaintenanceGuide(g) ? g : null
             return (
-              <div className="card border border-amber-900/40 bg-amber-950/15 p-5 sm:p-6">
-                <h3 className="mb-3 flex items-center gap-2 font-semibold text-amber-200/95 sm:mb-4">
-                  <Wrench className="h-5 w-5 shrink-0 text-amber-400" /> Anlage &amp; Pflege (KI)
+              <div className="card border border-slate-800 bg-slate-950/30 p-5 sm:p-6">
+                <h3 className="mb-3 flex items-center gap-2 font-semibold sm:mb-4">
+                  <Wrench className="h-5 w-5 shrink-0 text-emerald-500" /> Verknüpfte Anlage
                 </h3>
                 <div className="text-base font-medium text-slate-100">{la.name}</div>
                 <div className="text-sm text-slate-500">
@@ -607,24 +601,6 @@ export default function AppointmentDetailPage() {
                 >
                   Stammdaten der Anlage →
                 </Link>
-                {parsed ? (
-                  <div className="mt-4 space-y-3 border-t border-slate-800 pt-4 text-sm">
-                    <p className="leading-relaxed text-slate-300">{parsed.summary}</p>
-                    {parsed.checklist.length ? (
-                      <ul className="list-inside list-disc space-y-1 text-slate-400">
-                        {parsed.checklist.slice(0, 8).map((c, i) => (
-                          <li key={i}>{c}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    <p className="text-[11px] text-slate-600">
-                      Unverbindliche KI-Recherche beim Kunden — Abgleich mit Herstellerunterlagen und Vor-Ort-Begehung durch
-                      DMG.
-                    </p>
-                  </div>
-                ) : viewerIsAdmin ? (
-                  <p className="mt-3 text-xs text-slate-500">Keine strukturierten Pflegehinweise in der Anlage hinterlegt.</p>
-                ) : null}
               </div>
             )
           })()}

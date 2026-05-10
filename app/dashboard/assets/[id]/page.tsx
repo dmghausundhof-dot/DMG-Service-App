@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { ArrowLeft, Upload, Loader2, CheckCircle, Calendar, Save, AlertTriangle, Wrench, Edit, FileText, Trash2, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
-import type { MaintenanceGuide } from '@/lib/maintenance-guide'
 
 async function blobToBase64(blob: Blob): Promise<{ b64: string; mime: string }> {
   return new Promise((resolve, reject) => {
@@ -38,9 +37,6 @@ interface Asset {
   year_built: number | null
   capacity: string | null
   filter_type: string | null
-  last_maintenance: string | null
-  maintenance_interval_months: number | null
-  next_maintenance_due: string | null
   image_url: string | null
   notes: string | null
   ai_analysis: any | null
@@ -52,55 +48,11 @@ interface Asset {
   } | null
 }
 
-interface MaintenanceHistoryItem {
-  date: string
-  description: string
-  performed_by: string
-  notes: string
-}
-
-function getAssetStatus(asset: {
-  next_maintenance_due?: string | null
-  last_maintenance?: string | null
-}) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  if (asset.next_maintenance_due) {
-    const dueDate = new Date(asset.next_maintenance_due)
-    if (dueDate < today) {
-      return { 
-        label: 'Wartung überfällig', 
-        color: 'red', 
-        bg: 'bg-red-600/20 text-red-400 border-red-900/50',
-        icon: AlertTriangle 
-      }
-    }
-    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 3600 * 24))
-    if (diffDays <= 30) {
-      return { 
-        label: `Wartung in ${diffDays} Tagen`, 
-        color: 'amber', 
-        bg: 'bg-amber-600/20 text-amber-400 border-amber-900/50',
-        icon: Calendar 
-      }
-    }
-  }
-
-  if (asset.last_maintenance) {
-    return { 
-      label: 'Aktiv', 
-      color: 'emerald', 
-      bg: 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50',
-      icon: CheckCircle 
-    }
-  }
-
-  return { 
-    label: 'Neu', 
-    color: 'blue', 
-    bg: 'bg-blue-600/20 text-blue-400 border-blue-900/50',
-    icon: Wrench 
+function getAssetListingBadge() {
+  return {
+    label: 'Im Portal',
+    bg: 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50',
+    icon: CheckCircle,
   }
 }
 
@@ -123,9 +75,6 @@ export default function AssetDetailPage() {
     year_built: '',
     capacity: '',
     filter_type: '',
-    maintenance_interval_months: '12',
-    last_maintenance: '',
-    next_maintenance_due: '',
     notes: '',
     object_id: ''
   })
@@ -140,12 +89,9 @@ export default function AssetDetailPage() {
     merged: Record<string, unknown>
     visionAnalysis: Record<string, unknown> | null
     webEnrichment: Record<string, unknown> | null
-    maintenanceGuide: MaintenanceGuide | null
     aiConfidence: number | null
   } | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-
-  const [maintenanceHistory, setMaintenanceHistory] = useState<MaintenanceHistoryItem[]>([])
   const [appointments, setAppointments] = useState<any[]>([])
 
   // Load objects for selection
@@ -218,29 +164,11 @@ export default function AssetDetailPage() {
         year_built: assetData.year_built ? assetData.year_built.toString() : '',
         capacity: assetData.capacity || '',
         filter_type: assetData.filter_type || '',
-        maintenance_interval_months: assetData.maintenance_interval_months ? assetData.maintenance_interval_months.toString() : '12',
-        last_maintenance: assetData.last_maintenance || '',
-        next_maintenance_due: assetData.next_maintenance_due || '',
         notes: assetData.notes || '',
         object_id: assetData.object_id || ''
       })
 
       setImagePreview(assetData.image_url || null)
-
-      // Fetch real maintenance history
-      const { data: historyData } = await supabase
-        .from('maintenance_history')
-        .select('*')
-        .eq('asset_id', id)
-        .order('maintenance_date', { ascending: false })
-      if (historyData) {
-        setMaintenanceHistory(historyData.map((h: any) => ({
-          date: h.maintenance_date,
-          description: h.description || 'Wartung',
-          performed_by: h.performed_by || 'DMG Service',
-          notes: h.notes || ''
-        })))
-      }
 
       // Fetch linked appointments for the object
       if (assetData.object_id) {
@@ -328,7 +256,6 @@ export default function AssetDetailPage() {
         merged?: Record<string, unknown>
         visionAnalysis?: Record<string, unknown> | null
         webEnrichment?: Record<string, unknown> | null
-        maintenanceGuide?: MaintenanceGuide | null
         error?: string
         detail?: string
       }
@@ -353,16 +280,10 @@ export default function AssetDetailPage() {
           merged: { ...m },
           visionAnalysis: data.visionAnalysis ?? null,
           webEnrichment: data.webEnrichment ?? null,
-          maintenanceGuide: data.maintenanceGuide ?? null,
           aiConfidence: conf !== null && Number.isFinite(conf) ? conf : null,
         })
 
         const webNotes = typeof m.web_notes === 'string' ? m.web_notes.trim() : ''
-        const moFromGuide =
-          data.maintenanceGuide?.typical_interval_months != null &&
-          Number.isFinite(data.maintenanceGuide.typical_interval_months)
-            ? Math.min(120, Math.max(1, Math.round(data.maintenanceGuide.typical_interval_months)))
-            : null
 
         setFormData((prev) => ({
           ...prev,
@@ -373,8 +294,6 @@ export default function AssetDetailPage() {
           year_built: yr != null ? String(yr) : prev.year_built,
           capacity: m.capacity !== undefined ? String(m.capacity ?? '') : prev.capacity,
           filter_type: m.filter_type !== undefined ? String(m.filter_type ?? '') : prev.filter_type,
-          maintenance_interval_months:
-            moFromGuide != null ? String(moFromGuide) : prev.maintenance_interval_months,
           notes:
             prev.notes.trim() ||
             [`Konfidenz: ${Math.round((typeof conf === 'number' ? conf : 0) * 100)}%`, webNotes]
@@ -395,76 +314,6 @@ export default function AssetDetailPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const calculateNextMaintenance = () => {
-    if (!formData.last_maintenance || !formData.maintenance_interval_months) {
-      alert('Bitte letztes Wartungsdatum und Intervall angeben.')
-      return
-    }
-    const lastDate = new Date(formData.last_maintenance)
-    const interval = parseInt(formData.maintenance_interval_months)
-    const nextDate = new Date(lastDate)
-    nextDate.setMonth(nextDate.getMonth() + interval)
-    const nextDateStr = nextDate.toISOString().split('T')[0]
-    setFormData(prev => ({ ...prev, next_maintenance_due: nextDateStr }))
-  }
-
-  const logMaintenance = async () => {
-    const today = new Date().toISOString().split('T')[0]
-    const interval = parseInt(formData.maintenance_interval_months) || 12
-    const nextDate = new Date()
-    nextDate.setMonth(nextDate.getMonth() + interval)
-    const nextDateStr = nextDate.toISOString().split('T')[0]
-
-    // Update form
-    setFormData(prev => ({
-      ...prev,
-      last_maintenance: today,
-      next_maintenance_due: nextDateStr
-    }))
-
-    // Insert into real maintenance_history table
-    try {
-      await supabase
-        .from('maintenance_history')
-        .insert({
-          asset_id: id,
-          maintenance_date: today,
-          description: 'Wartung protokolliert',
-          performed_by: 'Sie (Kunde)',
-          notes: 'Manuell über Detail-Seite erfasst'
-        })
-
-      // Also update asset's last/next dates
-      await supabase
-        .from('assets')
-        .update({
-          last_maintenance: today,
-          next_maintenance_due: nextDateStr
-        })
-        .eq('id', id)
-
-      // Refresh history
-      const { data: newHistory } = await supabase
-        .from('maintenance_history')
-        .select('*')
-        .eq('asset_id', id)
-        .order('maintenance_date', { ascending: false })
-      if (newHistory) {
-        setMaintenanceHistory(newHistory.map((h: any) => ({
-          date: h.maintenance_date,
-          description: h.description || 'Wartung',
-          performed_by: h.performed_by || 'DMG Service',
-          notes: h.notes || ''
-        })))
-      }
-
-      alert('✅ Wartung protokolliert und nächste Wartung automatisch berechnet!')
-    } catch (err: any) {
-      console.error(err)
-      alert('Fehler beim Protokollieren: ' + (err.message || 'Unbekannt'))
-    }
   }
 
   const deleteAsset = async () => {
@@ -502,9 +351,6 @@ export default function AssetDetailPage() {
         year_built: formData.year_built ? parseInt(formData.year_built) : null,
         capacity: formData.capacity || null,
         filter_type: formData.filter_type || null,
-        maintenance_interval_months: parseInt(formData.maintenance_interval_months) || 12,
-        last_maintenance: formData.last_maintenance || null,
-        next_maintenance_due: formData.next_maintenance_due || null,
         notes: formData.notes || null,
         object_id: formData.object_id
       }
@@ -524,7 +370,6 @@ export default function AssetDetailPage() {
           vision: analyzePersist.visionAnalysis,
           web: analyzePersist.webEnrichment,
         }
-        updatePayload.ai_maintenance_guide = analyzePersist.maintenanceGuide
         updatePayload.ai_confidence = analyzePersist.aiConfidence
       }
 
@@ -583,7 +428,7 @@ export default function AssetDetailPage() {
     )
   }
 
-  const currentStatus = getAssetStatus(formData)
+  const currentStatus = getAssetListingBadge()
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -605,9 +450,6 @@ export default function AssetDetailPage() {
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:shrink-0">
-          <button type="button" onClick={logMaintenance} className="btn-secondary flex w-full items-center justify-center gap-2 sm:w-auto">
-            <Calendar className="h-4 w-4 shrink-0" /> Wartung protokollieren
-          </button>
           <button type="button" onClick={save} disabled={isSaving} className="btn-primary flex w-full items-center justify-center gap-2 px-6 py-3 sm:w-auto sm:text-lg">
             {isSaving ? (
               <>
@@ -713,14 +555,6 @@ export default function AssetDetailPage() {
                     Leistung: <span className="text-white">{String(analysis.capacity ?? '—')}</span>
                   </div>
                 </div>
-                {analyzePersist?.maintenanceGuide?.summary ? (
-                  <div className="mt-4 border-t border-emerald-900/50 pt-3 text-[13px] text-slate-300">
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-500/95">
-                      Wartungshinweis (KI)
-                    </div>
-                    <p className="leading-relaxed">{analyzePersist.maintenanceGuide.summary}</p>
-                  </div>
-                ) : null}
               </div>
             )}
 
@@ -806,7 +640,7 @@ export default function AssetDetailPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="text-sm text-slate-300 block mb-2">Baujahr</label>
                   <input type="number" name="year_built" value={formData.year_built} onChange={handleInputChange} className="input w-full" placeholder="2024" />
@@ -818,48 +652,6 @@ export default function AssetDetailPage() {
                 <div>
                   <label className="text-sm text-slate-300 block mb-2">Filtertyp</label>
                   <input name="filter_type" value={formData.filter_type} onChange={handleInputChange} className="input w-full" placeholder="Sediment 10µm" />
-                </div>
-                <div>
-                  <label className="text-sm text-slate-300 block mb-2">Wartungsintervall (Monate)</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      name="maintenance_interval_months" 
-                      value={formData.maintenance_interval_months} 
-                      onChange={handleInputChange} 
-                      className="input w-full" 
-                    />
-                    <button 
-                      type="button" 
-                      onClick={calculateNextMaintenance} 
-                      className="px-4 text-xs border border-emerald-900/50 text-emerald-400 hover:bg-emerald-950 rounded-2xl whitespace-nowrap"
-                    >
-                      Nächste berechnen
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm text-slate-300 block mb-2">Letzte Wartung</label>
-                  <input 
-                    type="date" 
-                    name="last_maintenance" 
-                    value={formData.last_maintenance} 
-                    onChange={handleInputChange} 
-                    className="input w-full" 
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-slate-300 block mb-2">Nächste Wartung fällig</label>
-                  <input 
-                    type="date" 
-                    name="next_maintenance_due" 
-                    value={formData.next_maintenance_due} 
-                    onChange={handleInputChange} 
-                    className="input w-full" 
-                  />
                 </div>
               </div>
 
@@ -876,55 +668,6 @@ export default function AssetDetailPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Maintenance History */}
-      <div className="mt-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-semibold tracking-tight flex items-center gap-3">
-            <Calendar className="w-8 h-8 text-emerald-500" /> Wartungshistorie
-          </h2>
-          <button 
-            onClick={logMaintenance} 
-            className="btn-secondary flex items-center gap-2 px-5 py-2 text-sm"
-          >
-            + Wartung heute protokollieren
-          </button>
-        </div>
-
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-800 text-left text-sm text-slate-400">
-                  <th className="px-6 py-4 font-normal">Datum</th>
-                  <th className="px-6 py-4 font-normal">Beschreibung</th>
-                  <th className="px-6 py-4 font-normal">Durchgeführt von</th>
-                  <th className="px-6 py-4 font-normal">Notizen</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800 text-sm">
-                {maintenanceHistory.length > 0 ? (
-                  maintenanceHistory.map((entry, index) => (
-                    <tr key={index} className="hover:bg-slate-900/50 transition">
-                      <td className="px-6 py-4 font-medium text-emerald-400">{new Date(entry.date).toLocaleDateString('de-DE')}</td>
-                      <td className="px-6 py-4 text-white">{entry.description}</td>
-                      <td className="px-6 py-4 text-slate-400">{entry.performed_by}</td>
-                      <td className="px-6 py-4 text-slate-400 max-w-xs truncate">{entry.notes}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
-                      Noch keine Wartungshistorie vorhanden.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <p className="text-xs text-slate-500 mt-3 text-center">Wartungen werden in der Datenbank protokolliert und sind hier dauerhaft gespeichert.</p>
       </div>
 
       {/* Verknüpfte Termine (echte Liste) */}
@@ -1018,9 +761,9 @@ export default function AssetDetailPage() {
             <Calendar className="w-5 h-5 text-emerald-500" /> Weitere Aktionen
           </h3>
           <div className="text-sm text-slate-400 space-y-2">
-            <div>• Wartungsintervall anpassen</div>
             <div>• Aus Bild erneut auswerten</div>
             <div>• Bild aktualisieren</div>
+            <div>• Stammdaten und Notizen pflegen</div>
           </div>
         </div>
       </div>

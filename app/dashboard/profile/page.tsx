@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
-import { User, Save, ArrowLeft, Lock, Bell, Mail, MessageCircle, FileUp, Trash2, Loader2 } from 'lucide-react'
+import { User, Save, ArrowLeft, Lock, FileUp, Trash2, Loader2 } from 'lucide-react'
 import { DELETE_ACCOUNT_CONFIRM_PHRASE } from '@/lib/delete-account-constants'
 import Link from 'next/link'
 
@@ -14,10 +14,6 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [notes, setNotes] = useState('')
-  const [reminderEmail, setReminderEmail] = useState(true)
-  const [reminderWhatsapp, setReminderWhatsapp] = useState(false)
-  const [reminderDays, setReminderDays] = useState(7)
-  const [whatsappPhone, setWhatsappPhone] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -45,7 +41,7 @@ export default function ProfilePage() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, phone, email, notes, reminder_email, reminder_whatsapp, reminder_days_before, whatsapp_phone, role')
+          .select('full_name, phone, email, notes, role')
           .eq('user_id', user.id)
           .maybeSingle()
         
@@ -56,10 +52,6 @@ export default function ProfilePage() {
           setPhone(profile.phone || '')
           setEmail(profile.email || user.email || '')
           setNotes(profile.notes || '')
-          setReminderEmail(profile.reminder_email ?? true)
-          setReminderWhatsapp(profile.reminder_whatsapp ?? false)
-          setReminderDays(profile.reminder_days_before ?? 7)
-          setWhatsappPhone(profile.whatsapp_phone || '')
         }
       }
       setLoading(false)
@@ -87,10 +79,6 @@ export default function ProfilePage() {
         phone: phone || null,
         email: email || null,
         notes: notes || null,
-        reminder_email: reminderEmail,
-        reminder_whatsapp: reminderWhatsapp,
-        reminder_days_before: reminderDays,
-        whatsapp_phone: whatsappPhone || null,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id)
@@ -394,111 +382,6 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
-        </div>
-      </div>
-
-      {/* Wartungserinnerungen Section */}
-      <div className="mt-10">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 bg-emerald-600/10 rounded-2xl flex items-center justify-center">
-            <Bell className="w-7 h-7 text-emerald-500" />
-          </div>
-          <div>
-            <div className="text-emerald-500 text-sm font-semibold tracking-[2px]">ERINNERUNGEN</div>
-            <h2 className="text-4xl font-semibold tracking-tighter">Wartungserinnerungen</h2>
-            <p className="text-xl text-slate-400 mt-1">Lassen Sie sich automatisch an bevorstehende Wartungen erinnern</p>
-          </div>
-        </div>
-
-        <div className="card max-w-2xl p-5 sm:p-6 lg:p-8">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-emerald-500" />
-                <div>
-                  <div className="font-medium">E-Mail-Erinnerungen</div>
-                  <div className="text-sm text-slate-400">Erhalten Sie Terminerinnerungen per E-Mail</div>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={reminderEmail} 
-                  onChange={(e) => setReminderEmail(e.target.checked)}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-              </label>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl">
-              <div className="flex items-center gap-3">
-                <MessageCircle className="w-5 h-5 text-emerald-500" />
-                <div>
-                  <div className="font-medium">WhatsApp-Erinnerungen</div>
-                  <div className="text-sm text-slate-400">Erhalten Sie Terminerinnerungen per WhatsApp (benötigt verifizierte Nummer)</div>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={reminderWhatsapp} 
-                  onChange={(e) => setReminderWhatsapp(e.target.checked)}
-                  className="sr-only peer" 
-                />
-                <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-              </label>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Erinnerung vorab (Tage)</label>
-              <select 
-                value={reminderDays} 
-                onChange={(e) => setReminderDays(parseInt(e.target.value))}
-                className="input w-full py-3 text-base"
-              >
-                <option value={1}>1 Tag vorher</option>
-                <option value={3}>3 Tage vorher</option>
-                <option value={7}>7 Tage vorher (empfohlen)</option>
-                <option value={14}>14 Tage vorher</option>
-                <option value={30}>30 Tage vorher</option>
-              </select>
-              <p className="text-xs text-slate-500 mt-1">Wann sollen wir Sie vor der nächsten Wartung erinnern?</p>
-            </div>
-
-            {reminderWhatsapp && (
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">WhatsApp-Nummer (falls abweichend von Telefon)</label>
-                <input 
-                  type="tel" 
-                  value={whatsappPhone} 
-                  onChange={(e) => setWhatsappPhone(e.target.value)}
-                  className="input w-full py-3 text-base"
-                  placeholder="+49 176 12345678"
-                />
-                <p className="text-xs text-slate-500 mt-1">Nur notwendig, wenn Ihre WhatsApp-Nummer von der Telefonnummer abweicht</p>
-              </div>
-            )}
-
-            <div className="pt-4">
-              <button 
-                type="button" 
-                onClick={handleSave}
-                disabled={saving}
-                className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base disabled:opacity-50"
-              >
-                {saving ? (
-                  <>Wird gespeichert...</>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    Erinnerungseinstellungen speichern
-                  </>
-                )}
-              </button>
-            </div>
-
-          </div>
         </div>
       </div>
 

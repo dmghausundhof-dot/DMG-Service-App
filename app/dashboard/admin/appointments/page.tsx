@@ -24,8 +24,6 @@ import {
   parseStoredTimeWindow,
   timeToMinutes,
 } from '@/lib/appointment-time-slots'
-import { isMaintenanceGuide } from '@/lib/maintenance-guide'
-
 interface Appointment {
   id: string
   service_type: string
@@ -146,7 +144,7 @@ export default function AdminAppointmentsPage() {
         attachment_urls,
         asset_id,
         objects (name, city),
-        assets (id, name, category, manufacturer, model, ai_maintenance_guide)
+        assets (id, name, category, manufacturer, model)
       `)
       .in('status', ['requested', 'reschedule_requested'])
       .order('created_at', { ascending: true })
@@ -287,11 +285,9 @@ export default function AdminAppointmentsPage() {
                           : appt.assets
                         : null
                       if (!la?.id) return null
-                      const g = la.ai_maintenance_guide
-                      const parsed = g && isMaintenanceGuide(g) ? g : null
                       return (
-                        <div className="mb-6 rounded-2xl border border-amber-900/40 bg-amber-950/20 p-4 text-sm">
-                          <div className="text-xs font-medium text-amber-400/95">VERKNÜPFTE ANLAGE</div>
+                        <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-950/40 p-4 text-sm">
+                          <div className="text-xs font-medium text-slate-500">VERKNÜPFTE ANLAGE</div>
                           <div className="mt-1 font-medium text-slate-200">
                             {la.name}
                             <span className="font-normal text-slate-500">
@@ -299,9 +295,6 @@ export default function AdminAppointmentsPage() {
                               ({[la.category, la.manufacturer, la.model].filter(Boolean).join(' · ')})
                             </span>
                           </div>
-                          {parsed ? (
-                            <p className="mt-2 line-clamp-3 text-slate-400">{parsed.summary}</p>
-                          ) : null}
                           <Link
                             href={`/dashboard/assets/${la.id}`}
                             className="mt-2 inline-block text-xs text-emerald-400 hover:underline"

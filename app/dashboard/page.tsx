@@ -54,12 +54,6 @@ export default async function DashboardOverview() {
     .gte('preferred_date', today)
     .not('status', 'eq', 'completed')
 
-  const { count: overdueMaintenances = 0 } = await supabase
-    .from('assets')
-    .select('*', { count: 'exact', head: true })
-    .in('object_id', objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000'])
-    .lt('next_maintenance_due', today)
-
   const { count: openDocuments = 0 } = await supabase
     .from('documents')
     .select('*', { count: 'exact', head: true })
@@ -75,7 +69,7 @@ export default async function DashboardOverview() {
 
   const { data: assetsRows } = await supabase
     .from('assets')
-    .select('id, name, object_id, next_maintenance_due')
+    .select('id, name, object_id')
     .in('object_id', objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000'])
   const assets = assetsRows ?? []
 
@@ -121,7 +115,7 @@ export default async function DashboardOverview() {
             </div>
             <div className="text-4xl font-semibold tabular-nums tracking-tighter text-emerald-400 lg:text-5xl">{totalAssets}</div>
           </div>
-          <div className="text-lg font-semibold sm:text-xl">Sie haben {totalAssets} wartungsintensive Anlagen</div>
+          <div className="text-lg font-semibold sm:text-xl">Sie haben {totalAssets} erfasste Anlagen</div>
           <p className="mt-1.5 text-sm text-slate-400">Balkonkraftwerk, Heizung, Filter etc.</p>
         </div>
 
@@ -136,17 +130,15 @@ export default async function DashboardOverview() {
           <p className="mt-1.5 text-sm text-slate-400">Nächster: Filterwechsel Balkonkraftwerk am 18.05.</p>
         </div>
 
-        <div className="card group p-5 transition-all hover:border-red-500/50 sm:p-6 lg:p-8">
+        <div className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6 lg:p-8">
           <div className="mb-4 flex items-center justify-between sm:mb-5 lg:mb-6">
-            <div className="text-red-500">
-              <Wrench className="h-7 w-7 sm:h-8 sm:w-8" />
+            <div className="text-emerald-500">
+              <MapPin className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
-            <div className="text-4xl font-semibold tabular-nums tracking-tighter text-red-400 lg:text-5xl">{overdueMaintenances ?? 0}</div>
+            <div className="text-4xl font-semibold tabular-nums tracking-tighter text-emerald-400 lg:text-5xl">{objects.length}</div>
           </div>
-          <div className="text-lg font-semibold sm:text-xl">Überfällige Wartungen</div>
-          <p className="mt-1.5 text-sm text-slate-400">
-            {(overdueMaintenances ?? 0) > 0 ? 'Bitte bald einen Termin vereinbaren!' : 'Alle Wartungen sind aktuell.'}
-          </p>
+          <div className="text-lg font-semibold sm:text-xl">Ihre Objekte</div>
+          <p className="mt-1.5 text-sm text-slate-400">Standorte und Gebäude im Portal.</p>
         </div>
 
         <div className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6 lg:p-8">
@@ -181,9 +173,13 @@ export default async function DashboardOverview() {
                   a.preferred_date != null &&
                   String(a.preferred_date) >= today,
               )
-              const nextMaint = objAssets
-                .filter(a => a.next_maintenance_due)
-                .sort((a, b) => new Date(a.next_maintenance_due!).getTime() - new Date(b.next_maintenance_due!).getTime())[0]
+              const nextAppt = objAppointments
+                .filter((a) => a.preferred_date)
+                .sort(
+                  (a, b) =>
+                    new Date(String(a.preferred_date)).getTime() -
+                    new Date(String(b.preferred_date)).getTime(),
+                )[0]
 
               return (
                 <div key={obj.id} className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6">
@@ -212,9 +208,14 @@ export default async function DashboardOverview() {
                     </div>
                     <div className="bg-slate-800/50 rounded-2xl p-3">
                       <div className="text-2xl font-semibold tabular-nums text-emerald-400">
-                        {nextMaint ? new Date(nextMaint.next_maintenance_due!).toLocaleDateString('de-DE', {day: 'numeric', month: 'short'}) : '—'}
+                        {nextAppt?.preferred_date
+                          ? new Date(String(nextAppt.preferred_date)).toLocaleDateString('de-DE', {
+                              day: 'numeric',
+                              month: 'short',
+                            })
+                          : '—'}
                       </div>
-                      <div className="text-[10px] text-slate-400 tracking-widest">NÄCHSTE WARTUNG</div>
+                      <div className="text-[10px] text-slate-400 tracking-widest">NÄCHSTER TERMIN</div>
                     </div>
                   </div>
 
@@ -286,7 +287,7 @@ export default async function DashboardOverview() {
             {[
               { date: '08.05.2026', title: 'Servicebericht Balkonkraftwerk', type: 'report', status: 'Neu' },
               { date: '02.05.2026', title: 'Rechnung #INV-2026-047', type: 'invoice', status: 'Bezahlt' },
-              { date: '28.04.2026', title: 'Wartung Heizung abgeschlossen', type: 'report', status: 'Abgeschlossen' },
+              { date: '28.04.2026', title: 'Service Heizung abgeschlossen', type: 'report', status: 'Abgeschlossen' },
             ].map((item, index) => (
               <div
                 key={index}

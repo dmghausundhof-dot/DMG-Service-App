@@ -23,7 +23,6 @@ interface Asset {
   name: string
   category: string
   image_url: string | null
-  next_maintenance_due: string | null
 }
 
 interface Appointment {
@@ -107,7 +106,7 @@ export default function ObjectDetailPage() {
       // Fetch related assets
       const { data: assetsData } = await supabase
         .from('assets')
-        .select('id, name, category, image_url, next_maintenance_due')
+        .select('id, name, category, image_url')
         .eq('object_id', id)
         .order('created_at', { ascending: false })
         .limit(6)
@@ -410,7 +409,7 @@ export default function ObjectDetailPage() {
               <div className="font-semibold text-3xl tabular-nums">{assets.length}</div>
             </div>
           </div>
-          <div className="text-xs text-emerald-400">Wartungsintensiv</div>
+          <div className="text-xs text-emerald-400">Erfasst im Portal</div>
         </div>
       </div>
 
@@ -441,11 +440,6 @@ export default function ObjectDetailPage() {
                   <div className="flex-1">
                     <div className="font-semibold group-hover:text-emerald-400 transition-colors">{asset.name}</div>
                     <div className="text-sm text-slate-400">{asset.category}</div>
-                    {asset.next_maintenance_due && (
-                      <div className="text-xs text-amber-400 mt-1">
-                        Nächste Wartung: {new Date(asset.next_maintenance_due).toLocaleDateString('de-DE')}
-                      </div>
-                    )}
                   </div>
                   {asset.image_url && (
                     <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
