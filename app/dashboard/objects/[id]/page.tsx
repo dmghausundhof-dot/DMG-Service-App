@@ -550,6 +550,8 @@ export default function ObjectDetailPage() {
                             ? 'Servicebericht'
                             : doc.type === 'customer_upload'
                               ? 'Kunden-Datei'
+                              : doc.type === 'other'
+                                ? 'Andere'
                               : doc.type}{' '}
                       • {new Date(doc.created_at).toLocaleDateString('de-DE')}
                     </div>

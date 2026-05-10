@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
-import { User, Save, ArrowLeft, Lock, Bell, Mail, MessageCircle } from 'lucide-react'
+import { User, Save, ArrowLeft, Lock, Bell, Mail, MessageCircle, FileUp } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ProfilePage() {
@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     async function loadProfile() {
@@ -38,10 +39,12 @@ export default function ProfilePage() {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, phone, email, notes, reminder_email, reminder_whatsapp, reminder_days_before, whatsapp_phone')
+          .select('full_name, phone, email, notes, reminder_email, reminder_whatsapp, reminder_days_before, whatsapp_phone, role')
           .eq('user_id', user.id)
           .maybeSingle()
         
+        setIsAdmin(profile?.role === 'admin')
+
         if (profile) {
           setFullName(profile.full_name || '')
           setPhone(profile.phone || '')
@@ -177,6 +180,27 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {isAdmin && (
+        <div className="mb-8 card p-6 border border-emerald-800/50 bg-emerald-950/20">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="text-xs font-semibold text-emerald-500 tracking-[2px] mb-1">ADMIN</div>
+              <p className="text-slate-200 font-medium">Kunden-Belege hier hochladen</p>
+              <p className="text-sm text-slate-400 mt-1">
+                Rechnungen, Angebote und Serviceberichte einem Kundenobjekt zuordnen – wie in der Sidebar unter „Admin: Belege“.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/admin/documents/new"
+              className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 whitespace-nowrap shrink-0"
+            >
+              <FileUp className="w-5 h-5" />
+              Beleg für Kunden
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="card p-8">
         <form onSubmit={handleSave} className="space-y-6">

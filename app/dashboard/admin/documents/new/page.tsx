@@ -30,7 +30,7 @@ function AdminBusinessDocumentForm() {
   const [allowed, setAllowed] = useState(false)
   const [objects, setObjects] = useState<ObjectRow[]>([])
   const [selectedObjectId, setSelectedObjectId] = useState('')
-  const [documentType, setDocumentType] = useState<'offer' | 'invoice' | 'report'>('invoice')
+  const [documentType, setDocumentType] = useState<'offer' | 'invoice' | 'report' | 'other'>('invoice')
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState('')
@@ -151,7 +151,7 @@ function AdminBusinessDocumentForm() {
       <div className="mb-8">
         <h1 className="text-5xl font-semibold tracking-tighter mb-3">Beleg für Kunden</h1>
         <p className="text-xl text-slate-400">
-          Nur für den Betrieb: Rechnungen, Angebote und Serviceberichte dem passenden Objekt zuordnen.
+          Nur für den Betrieb: Belege und weitere Dokumente dem passenden Objekt zuordnen.
         </p>
       </div>
 
@@ -181,24 +181,25 @@ function AdminBusinessDocumentForm() {
 
           <div>
             <label className="text-sm text-slate-300 block mb-2">Dokumententyp *</label>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { value: 'invoice' as const, label: 'Rechnung', icon: '📄' },
                 { value: 'offer' as const, label: 'Angebot', icon: '📝' },
                 { value: 'report' as const, label: 'Servicebericht', icon: '📋' },
+                { value: 'other' as const, label: 'Andere', icon: '📎' },
               ].map((type) => (
                 <button
                   key={type.value}
                   type="button"
                   onClick={() => setDocumentType(type.value)}
-                  className={`flex-1 p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
                     documentType === type.value
                       ? 'border-emerald-500 bg-emerald-600/10 text-emerald-400'
                       : 'border-slate-700 hover:border-slate-600 text-slate-400'
                   }`}
                 >
                   <span className="text-2xl">{type.icon}</span>
-                  <span className="font-medium">{type.label}</span>
+                  <span className="font-medium text-center text-sm">{type.label}</span>
                 </button>
               ))}
             </div>

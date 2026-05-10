@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
-import { Calendar, Clock, AlertTriangle, CheckCircle, ArrowRight, User, Loader2 } from 'lucide-react'
+import { Calendar, Clock, AlertTriangle, CheckCircle, ArrowRight, User, Loader2, ImageIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { 
   confirmAppointment, 
@@ -68,6 +68,7 @@ export default function AdminAppointmentsPage() {
         proposed_preferred_date,
         proposed_time_window,
         reschedule_requested_at,
+        attachment_urls,
         objects (name, city)
       `)
       .in('status', ['requested', 'reschedule_requested'])
@@ -201,6 +202,13 @@ export default function AdminAppointmentsPage() {
                         <div className={`font-medium ${urgencyColor}`}>{appt.urgency === 'emergency' ? 'Notfall' : appt.urgency === 'high' ? 'Hoch' : 'Normal'}</div>
                       </div>
                     </div>
+
+                    {Array.isArray(appt.attachment_urls) && appt.attachment_urls.length > 0 && (
+                      <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium text-sky-400 bg-sky-950/40 border border-sky-900/50 px-3 py-1.5 rounded-full">
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        {appt.attachment_urls.length} Foto(s) angehängt
+                      </div>
+                    )}
 
                     {appt.description && (
                       <div className="mb-4">

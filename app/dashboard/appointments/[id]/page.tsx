@@ -3,10 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Loader2, Save, X, Edit2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Loader2, X, Edit2, ImageIcon, Shield, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import DeleteConfirmation from '@/components/DeleteConfirmation'
+
+interface AttachmentMeta {
+  url: string
+  file_name?: string
+  file_size?: number
+}
+
+type CustomerProfileEmbed = {
+  full_name: string | null
+  email: string | null
+  phone: string | null
+}
 
 interface Appointment {
   id: string
@@ -18,15 +30,44 @@ interface Appointment {
   description: string | null
   customer_notes: string | null
   object_id: string
+  attachment_urls?: AttachmentMeta[] | null
   objects: {
     name: string
     city: string | null
+    profile_id?: string
+    profiles?: CustomerProfileEmbed | CustomerProfileEmbed[] | null
   } | null
   proposed_preferred_date?: string | null
   proposed_time_window?: string | null
   reschedule_reason?: string | null
   reschedule_requested_at?: string | null
 }
+
+function parseAttachments(raw: unknown): AttachmentMeta[] {
+  if (!raw || !Array.isArray(raw)) return []
+  return raw.filter(
+    (x): x is AttachmentMeta =>
+      Boolean(x && typeof x === 'object' && typeof (x as AttachmentMeta).url === 'string'),
+  )
+}
+
+function embeddedCustomerProfile(
+  objects: Appointment['objects'],
+): CustomerProfileEmbed | null {
+  if (!objects?.profiles) return null
+  const p = objects.profiles
+  return Array.isArray(p) ? p[0] ?? null : p
+}
+
+const APPOINTMENT_DETAIL_SELECT = `
+  *,
+  objects (
+    name,
+    city,
+    profile_id,
+    profiles (full_name, email, phone)
+  )
+`
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -64,6 +105,7 @@ export default function AppointmentDetailPage() {
   const supabase = createClient()
 
   const [appointment, setAppointment] = useState<Appointment | null>(null)
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -89,7 +131,16 @@ export default function AppointmentDetailPage() {
         return
       }
 
-      const pid = await getOrCreateProfileId(supabase, user)
+      await getOrCreateProfileId(supabase, user)
+
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      const pid = profileRow?.id ?? null
+      const isAdmin = profileRow?.role === 'admin'
 
       if (!pid) {
         setError('Profil konnte nicht geladen werden')
@@ -99,10 +150,7 @@ export default function AppointmentDetailPage() {
 
       const { data: apptData, error: fetchError } = await supabase
         .from('appointments')
-        .select(`
-          *, 
-          objects (name, city, profile_id)
-        `)
+        .select(APPOINTMENT_DETAIL_SELECT)
         .eq('id', id)
         .maybeSingle()
 
@@ -114,13 +162,17 @@ export default function AppointmentDetailPage() {
 
       const emb = apptData.objects as { profile_id?: string } | { profile_id?: string }[] | null
       const objRow = Array.isArray(emb) ? emb[0] : emb
-      if (!objRow?.profile_id || objRow.profile_id !== pid) {
-        setError('Termin nicht gefunden oder Sie haben keine Berechtigung.')
-        setLoading(false)
-        return
+
+      if (!isAdmin) {
+        if (!objRow?.profile_id || objRow.profile_id !== pid) {
+          setError('Termin nicht gefunden oder Sie haben keine Berechtigung.')
+          setLoading(false)
+          return
+        }
       }
 
       setAppointment(apptData as Appointment)
+      setViewerIsAdmin(isAdmin)
       setLoading(false)
     }
 
@@ -154,7 +206,7 @@ export default function AppointmentDetailPage() {
       // Refresh data
       const { data: updated } = await supabase
         .from('appointments')
-        .select(`*, objects (name, city)`)
+        .select(APPOINTMENT_DETAIL_SELECT)
         .eq('id', appointment.id)
         .single()
 
@@ -195,7 +247,7 @@ export default function AppointmentDetailPage() {
 
       const { data: updated } = await supabase
         .from('appointments')
-        .select(`*, objects (name, city)`)
+        .select(APPOINTMENT_DETAIL_SELECT)
         .eq('id', appointment.id)
         .single()
 
@@ -220,7 +272,7 @@ export default function AppointmentDetailPage() {
 
       const { data: updated } = await supabase
         .from('appointments')
-        .select(`*, objects (name, city)`)
+        .select(APPOINTMENT_DETAIL_SELECT)
         .eq('id', appointment.id)
         .single()
 
@@ -258,17 +310,24 @@ export default function AppointmentDetailPage() {
   const statusInfo = getStatusBadge(appointment.status)
   const StatusIcon = statusInfo.icon
   const urgencyInfo = getUrgencyBadge(appointment.urgency)
+  const attachments = parseAttachments(appointment.attachment_urls)
 
   const isRescheduleRequested = appointment.status === 'reschedule_requested'
   const canModify = !['completed', 'cancelled'].includes(appointment.status)
+  const canModifyClient = canModify && !viewerIsAdmin
+  const customerProf = embeddedCustomerProfile(appointment.objects)
 
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 mb-8">
         <div>
-          <Link href="/dashboard/appointments" className="flex items-center gap-2 text-slate-400 hover:text-white mb-2">
-            <ArrowLeft className="w-4 h-4" /> Zurück zu Terminen
+          <Link
+            href={viewerIsAdmin ? '/dashboard/admin/appointments' : '/dashboard/appointments'}
+            className="flex items-center gap-2 text-slate-400 hover:text-white mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />{' '}
+            {viewerIsAdmin ? 'Zurück zu Admin-Anfragen' : 'Zurück zu Terminen'}
           </Link>
           <h1 className="text-5xl font-semibold tracking-tighter flex items-center gap-4">
             {appointment.service_type}
@@ -283,8 +342,8 @@ export default function AppointmentDetailPage() {
           </p>
         </div>
 
-        {canModify && (
-          <div className="flex gap-3">
+        {canModifyClient && (
+          <div className="flex flex-wrap gap-3 shrink-0">
             <button 
               onClick={() => setShowRescheduleModal(true)}
               className="btn-secondary flex items-center gap-2 px-6 py-3"
@@ -300,6 +359,25 @@ export default function AppointmentDetailPage() {
           </div>
         )}
       </div>
+
+      {viewerIsAdmin && (
+        <div className="card p-5 mb-8 border border-amber-900/40 bg-amber-950/25 flex flex-wrap gap-4 items-start">
+          <Shield className="w-8 h-8 text-amber-400 shrink-0" />
+          <div className="flex-1 min-w-[220px] space-y-2">
+            <div className="font-semibold text-amber-100">Admin-Ansicht</div>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Sie sehen diese Terminanfrage mit Kundendaten. Änderungen durch den Kunden (Verschiebung / Storno) sind hier deaktiviert –
+              bitte Aktionen unter <strong className="text-slate-300">Admin: Anfragen</strong> durchführen oder den Kunden kontaktieren.
+            </p>
+            <Link
+              href="/dashboard/admin/appointments"
+              className="inline-flex text-sm text-emerald-400 hover:text-emerald-300 hover:underline"
+            >
+              → Zu den offenen Admin-Anfragen
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Reschedule Requested Banner */}
       {isRescheduleRequested && (
@@ -320,12 +398,15 @@ export default function AppointmentDetailPage() {
                   {appointment.reschedule_reason && <div className="mt-1"><strong>Begründung:</strong> {appointment.reschedule_reason}</div>}
                 </div>
               )}
-              <button 
-                onClick={handleWithdrawReschedule}
-                className="text-sm text-purple-400 hover:text-purple-300 underline"
-              >
-                Anfrage zurückziehen
-              </button>
+              {canModifyClient ? (
+                <button 
+                  type="button"
+                  onClick={handleWithdrawReschedule}
+                  className="text-sm text-purple-400 hover:text-purple-300 underline"
+                >
+                  Anfrage zurückziehen
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -389,11 +470,68 @@ export default function AppointmentDetailPage() {
                 <p className="text-slate-300 italic">"{appointment.customer_notes}"</p>
               </div>
             )}
+
+            {attachments.length > 0 && (
+              <div className="mt-8 pt-8 border-t border-slate-800">
+                <div className="text-xs text-slate-500 mb-3 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" /> ANGEHÄNGTE FOTOS ({attachments.length})
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {attachments.map((a, i) => (
+                    <a
+                      key={`${a.url}-${i}`}
+                      href={a.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block rounded-2xl border border-slate-700 overflow-hidden bg-slate-900/50 hover:border-emerald-800 transition"
+                    >
+                      <img
+                        src={a.url}
+                        alt={a.file_name || `Anhang ${i + 1}`}
+                        className="w-full h-28 object-cover"
+                      />
+                      <div className="px-2 py-1.5 text-[11px] text-slate-500 truncate group-hover:text-emerald-400/90">
+                        {a.file_name || 'Foto öffnen'}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {viewerIsAdmin && customerProf ? (
+            <div className="card p-6 border border-slate-700/80">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-sky-400" /> Kunde
+              </h3>
+              {customerProf.full_name ? (
+                <div className="text-lg font-medium text-slate-100">{customerProf.full_name}</div>
+              ) : (
+                <div className="text-sm text-slate-500 italic">Kein Name im Profil</div>
+              )}
+              {customerProf.email ? (
+                <a
+                  href={`mailto:${customerProf.email}`}
+                  className="text-sm text-emerald-400 hover:underline mt-2 block break-all"
+                >
+                  {customerProf.email}
+                </a>
+              ) : null}
+              {customerProf.phone ? (
+                <a
+                  href={`tel:${customerProf.phone}`}
+                  className="text-sm text-slate-400 hover:text-slate-200 mt-1 block"
+                >
+                  {customerProf.phone}
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="card p-6">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <MapPin className="w-5 h-5 text-emerald-500" /> Objekt
@@ -412,7 +550,13 @@ export default function AppointmentDetailPage() {
 
           <div className="card p-6 text-sm text-slate-400">
             <div className="font-medium text-white mb-2">Hinweis</div>
-            <p>Terminwünsche können bis 48 Stunden vor dem Termin kostenfrei geändert oder storniert werden. Danach gelten unsere AGB.</p>
+            {viewerIsAdmin ? (
+              <p>
+                Interne Bearbeitung: Status und Notizen im Bereich <strong className="text-slate-300">Admin: Anfragen</strong> pflegen.
+              </p>
+            ) : (
+              <p>Terminwünsche können bis 48 Stunden vor dem Termin kostenfrei geändert oder storniert werden. Danach gelten unsere AGB.</p>
+            )}
           </div>
         </div>
       </div>

@@ -35,6 +35,8 @@ function getTypeBadge(type: string) {
       return { label: 'Servicebericht', bg: 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50' }
     case 'customer_upload':
       return { label: 'Kunden-Datei', bg: 'bg-slate-600/20 text-slate-300 border-slate-700/50' }
+    case 'other':
+      return { label: 'Andere', bg: 'bg-amber-600/20 text-amber-400 border-amber-900/50' }
     default:
       return { label: type, bg: 'bg-slate-600/20 text-slate-400 border-slate-900/50' }
   }
