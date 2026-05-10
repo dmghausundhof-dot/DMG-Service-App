@@ -26,14 +26,18 @@ export async function getOrCreateProfileId(
   const meta = user.user_metadata as { full_name?: string } | undefined
   const fullName = meta?.full_name?.trim() || user.email?.split('@')[0] || 'Kunde'
 
-  const { error: insertError } = await supabase.from('profiles').insert({
-    user_id: user.id,
-    full_name: fullName,
-    email: user.email ?? '',
-  })
+  // Upsert ohne Update bei Konflikt: vermeidet 409 Race bei parallelem ersten Login.
+  const { error: upsertError } = await supabase.from('profiles').upsert(
+    {
+      user_id: user.id,
+      full_name: fullName,
+      email: user.email ?? '',
+    },
+    { onConflict: 'user_id', ignoreDuplicates: true },
+  )
 
-  if (insertError && insertError.code !== '23505' && !/duplicate/i.test(insertError.message ?? '')) {
-    console.error('getOrCreateProfileId insert', insertError)
+  if (upsertError) {
+    console.error('getOrCreateProfileId upsert', upsertError)
   }
 
   const { data: row } = await supabase
