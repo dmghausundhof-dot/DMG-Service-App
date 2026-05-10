@@ -291,15 +291,15 @@ export default function AppointmentsListPage() {
       {/* Search Bar */}
       <div className="mb-5 sm:mb-8">
         <div className="relative max-w-md">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-            <Search className="w-5 h-5" />
+          <div className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-slate-400">
+            <Search className="w-5 h-5 shrink-0" aria-hidden />
           </div>
           <input 
             type="text" 
-            placeholder="Termine durchsuchen (Service, Objekt, Beschreibung...)"
+            placeholder="Termine durchsuchen…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input w-full pl-12 pr-10"
+            className="input-search"
           />
           {searchTerm && (
             <button 

@@ -9,7 +9,6 @@ import {
   Loader2,
   CheckCircle,
   Save,
-  MapPin,
   Camera,
   Images,
   X,
@@ -17,6 +16,10 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
+import {
+  APPOINTMENT_TIME_SLOTS as TIME_SLOTS,
+  timeToMinutes,
+} from '@/lib/appointment-time-slots'
 
 interface ObjectOption {
   id: string
@@ -42,6 +45,9 @@ function NewAppointmentForm() {
   const [formData, setFormData] = useState({
     object_id: '',
     service_type: 'Wartung',
+    preferred_date: '',
+    time_from: '',
+    time_to: '',
     description: '',
     customer_notes: '',
   })
@@ -126,10 +132,32 @@ function NewAppointmentForm() {
     loadObjects()
   }, [router, supabase, searchParams])
 
+  const minDateYmd = (() => {
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  })()
+
+  const endTimeSlots = formData.time_from
+    ? TIME_SLOTS.filter((s) => timeToMinutes(s) > timeToMinutes(formData.time_from))
+    : []
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target
+    if (name === 'time_from') {
+      setFormData((prev) => {
+        let to = prev.time_to
+        if (value && to && timeToMinutes(to) <= timeToMinutes(value)) {
+          to = ''
+        }
+        return { ...prev, time_from: value, time_to: to }
+      })
+      return
+    }
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -138,6 +166,26 @@ function NewAppointmentForm() {
       setError('Bitte wählen Sie ein Objekt aus.')
       return
     }
+
+    const d = formData.preferred_date?.trim()
+    const tf = formData.time_from?.trim()
+    const tt = formData.time_to?.trim()
+    const anyTime = Boolean(tf || tt)
+    if (anyTime) {
+      if (!tf || !tt) {
+        setError('Zeitfenster: Bitte „Von“ und „Bis“ wählen oder beides leer lassen.')
+        return
+      }
+      if (timeToMinutes(tt) <= timeToMinutes(tf)) {
+        setError('„Bis“ muss nach „Von“ liegen.')
+        return
+      }
+      if (!d) {
+        setError('Bitte ein Wunschdatum angeben, wenn Sie ein Zeitfenster angeben.')
+        return
+      }
+    }
+
     setIsSaving(true)
     setError('')
 
@@ -156,8 +204,8 @@ function NewAppointmentForm() {
         .insert({
           object_id: formData.object_id,
           service_type: formData.service_type,
-          preferred_date: null,
-          time_window: null,
+          preferred_date: d || null,
+          time_window: tf && tt ? `${tf}-${tt}` : null,
           description: formData.description || null,
           customer_notes: formData.customer_notes || null,
           status: 'requested',
@@ -291,7 +339,7 @@ function NewAppointmentForm() {
           <div className="min-w-0">
             <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Neuen Termin anfragen</h1>
             <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
-              DMG plant Datum und Zeit; optional Fotos anhängen (z. B. Anlage, Fehler).
+              Wunschdatum, Zeitfenster und optional Fotos.
             </p>
           </div>
         </div>
@@ -350,9 +398,58 @@ function NewAppointmentForm() {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1">
-              <MapPin className="w-3 h-3" /> Wählen Sie das Objekt für den Service-Termin
-            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:gap-6">
+            <div>
+              <label className="mb-2 block text-sm text-slate-300">Wunschdatum (optional)</label>
+              <input
+                type="date"
+                name="preferred_date"
+                value={formData.preferred_date}
+                min={minDateYmd}
+                onChange={handleInputChange}
+                className="input w-full text-base sm:text-lg"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm text-slate-300">Zeitfenster (optional)</label>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+                <div>
+                  <span className="mb-1 block text-xs text-slate-500">Von</span>
+                  <select
+                    name="time_from"
+                    value={formData.time_from}
+                    onChange={handleInputChange}
+                    className="input w-full py-3 text-base"
+                  >
+                    <option value="">—</option>
+                    {TIME_SLOTS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <span className="mb-1 block text-xs text-slate-500">Bis</span>
+                  <select
+                    name="time_to"
+                    value={formData.time_to}
+                    onChange={handleInputChange}
+                    disabled={!formData.time_from}
+                    className="input w-full py-3 text-base disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="">—</option>
+                    {endTimeSlots.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -422,11 +519,7 @@ function NewAppointmentForm() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-xs text-slate-500">
-                Ohne Fotos fortfahren ist möglich – Bilder helfen dem Service bei der Vorbereitung.
-              </p>
-            )}
+            ) : null}
           </div>
 
           <div>
@@ -453,7 +546,6 @@ function NewAppointmentForm() {
               value={formData.description}
               onChange={handleInputChange}
               rows={4}
-              placeholder="z.B. Heizung macht Geräusche, Filter muss gewechselt werden..."
               className="input w-full resize-y min-h-[100px]"
             />
           </div>
@@ -465,7 +557,6 @@ function NewAppointmentForm() {
               value={formData.customer_notes}
               onChange={handleInputChange}
               rows={3}
-              placeholder="z.B. Bitte nach 17 Uhr, Haustür ist offen..."
               className="input w-full resize-y"
             />
           </div>
@@ -497,9 +588,6 @@ function NewAppointmentForm() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-slate-500 mt-6">
-          DMG meldet sich in der Regel innerhalb von 24 Stunden mit einem konkreten Terminvorschlag oder Rückfragen.
-        </p>
       </div>
     </div>
   )

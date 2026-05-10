@@ -458,17 +458,12 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            <div className="text-xs text-slate-500 bg-slate-800/50 p-4 rounded-2xl">
-              <strong>Hinweis zur Implementierung:</strong> Die automatischen Erinnerungen werden über Supabase Edge Functions und einen externen Service wie Resend (für E-Mail) oder Twilio/WhatsApp Business API gesendet. 
-              Ein geplanter Job (z.B. via pg_cron oder Supabase Cron) prüft täglich Assets mit fälliger Wartung und sendet Benachrichtigungen basierend auf Ihren Einstellungen. 
-              Kontaktieren Sie uns für die vollständige Backend-Integration.
-            </div>
           </div>
         </div>
       </div>
 
       <div className="mt-8 text-center text-xs text-slate-500">
-        Hinweis: Ihr Login-E-Mail kann nur über Supabase Auth geändert werden. Für Passwort-Reset nutzen Sie die Login-Seite. Passwort-Änderung erfordert Verifizierung des aktuellen Passworts.
+        E-Mail-Adresse und Passwort für den Login werden über Ihren Zugangsanbieter verwaltet.
       </div>
     </div>
   )

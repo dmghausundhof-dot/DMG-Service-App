@@ -192,15 +192,15 @@ export default function ObjectsListPage() {
       {objects.length > 0 && (
         <div className="mb-5 sm:mb-8">
           <div className="relative max-w-md">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-              <Search className="w-5 h-5" />
+            <div className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-slate-400">
+              <Search className="h-5 w-5 shrink-0" aria-hidden />
             </div>
             <input 
               type="text" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Suchen nach Name, Adresse, Notizen..."
-              className="input w-full pl-12 pr-10 py-3 text-base"
+              placeholder="Suchen…"
+              className="input-search py-3 text-base"
             />
             {searchTerm && (
               <button 

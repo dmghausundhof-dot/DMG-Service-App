@@ -19,6 +19,11 @@ import {
   rejectReschedule,
   updateAdminNote,
 } from './actions'
+import {
+  APPOINTMENT_TIME_SLOTS,
+  parseStoredTimeWindow,
+  timeToMinutes,
+} from '@/lib/appointment-time-slots'
 
 interface Appointment {
   id: string
@@ -48,8 +53,13 @@ export default function AdminAppointmentsPage() {
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduleAppt, setScheduleAppt] = useState<Appointment | null>(null)
   const [scheduleDate, setScheduleDate] = useState('')
-  const [scheduleWindow, setScheduleWindow] = useState('')
+  const [scheduleTimeFrom, setScheduleTimeFrom] = useState('')
+  const [scheduleTimeTo, setScheduleTimeTo] = useState('')
   const supabase = createClient()
+
+  const scheduleEndSlots = scheduleTimeFrom
+    ? APPOINTMENT_TIME_SLOTS.filter((s) => timeToMinutes(s) > timeToMinutes(scheduleTimeFrom))
+    : []
 
   const openSchedule = (appt: Appointment) => {
     setScheduleAppt(appt)
@@ -58,7 +68,9 @@ export default function AdminAppointmentsPage() {
         appt.preferred_date?.slice(0, 10) ||
         new Date().toISOString().split('T')[0],
     )
-    setScheduleWindow(appt.proposed_time_window || appt.time_window || '')
+    const parsed = parseStoredTimeWindow(appt.proposed_time_window || appt.time_window || '')
+    setScheduleTimeFrom(parsed.from)
+    setScheduleTimeTo(parsed.to)
     setScheduleOpen(true)
   }
 
@@ -67,13 +79,27 @@ export default function AdminAppointmentsPage() {
       alert('Bitte ein Datum wählen.')
       return
     }
+    const tf = scheduleTimeFrom.trim()
+    const tt = scheduleTimeTo.trim()
+    let time_window: string | null = null
+    if (tf || tt) {
+      if (!tf || !tt) {
+        alert('Zeitfenster: „Von“ und „Bis“ vollständig wählen oder beides leer lassen.')
+        return
+      }
+      if (timeToMinutes(tt) <= timeToMinutes(tf)) {
+        alert('„Bis“ muss nach „Von“ liegen.')
+        return
+      }
+      time_window = `${tf}-${tt}`
+    }
     const id = scheduleAppt.id
     setPendingId(id)
     startTransition(async () => {
       try {
         const result = await confirmAppointment(id, {
           preferred_date: scheduleDate.trim(),
-          time_window: scheduleWindow.trim() || null,
+          time_window,
         })
         if (result?.success) {
           alert(result.message || 'Erfolgreich!')
@@ -401,28 +427,46 @@ export default function AdminAppointmentsPage() {
               </div>
               <div>
                 <label className="text-sm text-slate-300 block mb-2">Zeitfenster (optional)</label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {[
-                    'Vormittag (08:00-12:00)',
-                    'Nachmittag (13:00-17:00)',
-                    '14:00-16:00',
-                  ].map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setScheduleWindow(s)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-slate-700 text-slate-300 hover:border-emerald-700"
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <span className="mb-1 block text-xs text-slate-500">Von</span>
+                    <select
+                      value={scheduleTimeFrom}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setScheduleTimeFrom(v)
+                        setScheduleTimeTo((prev) => {
+                          if (v && prev && timeToMinutes(prev) <= timeToMinutes(v)) return ''
+                          return prev
+                        })
+                      }}
+                      className="input w-full text-sm py-3"
                     >
-                      {s}
-                    </button>
-                  ))}
+                      <option value="">—</option>
+                      {APPOINTMENT_TIME_SLOTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <span className="mb-1 block text-xs text-slate-500">Bis</span>
+                    <select
+                      value={scheduleTimeTo}
+                      onChange={(e) => setScheduleTimeTo(e.target.value)}
+                      disabled={!scheduleTimeFrom}
+                      className="input w-full text-sm py-3 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">—</option>
+                      {scheduleEndSlots.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <textarea
-                  value={scheduleWindow}
-                  onChange={(e) => setScheduleWindow(e.target.value)}
-                  className="input w-full min-h-[72px] text-sm"
-                  placeholder='z. B. "Zwischen 13 und 17 Uhr"'
-                />
               </div>
             </div>
 

@@ -42,3 +42,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# PWA: Service Worker wird bei `next build --webpack` erzeugt
+/public/sw.js
+/public/workbox-*.js

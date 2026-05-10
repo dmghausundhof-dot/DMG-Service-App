@@ -5,12 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
-  Upload,
   Loader2,
   CheckCircle,
   Camera,
   Images,
-  X,
   Globe,
   Sparkles,
   PencilLine,
@@ -111,37 +109,88 @@ function NewAssetForm() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [preferManualOnly, setPreferManualOnly] = useState(false)
-  const [liveOpen, setLiveOpen] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
+  /** Kamera: Auto-KI nach Aufnahme · Gallerie: nur Bild, kein Auto-Start */
+  const [lastCaptureSource, setLastCaptureSource] = useState<'camera' | 'gallery' | null>(null)
 
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
-  const loadImageFromFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Bitte ein Bild (Foto) wählen.')
-      return
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      alert('Datei ist zu groß (max. 15 MB).')
-      return
-    }
-    setMimeType(file.type || 'image/jpeg')
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string
-      setImagePreview(dataUrl)
-      setImageBase64(dataUrl.split(',')[1])
-    }
-    reader.readAsDataURL(file)
-    setVisionAnalysis(null)
-    setWebEnrichment(null)
-    setMergedAnalysis(null)
-    setAnalysisMessage(null)
-    setWebSearchUsed(false)
-    setPreferManualOnly(false)
-  }, [])
+  const analyzeWithData = useCallback(
+    async (b64: string, mime: string) => {
+      setIsAnalyzing(true)
+      setAnalysisMessage(null)
+      try {
+        const res = await fetch('/api/analyze-asset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: b64, mimeType: mime }),
+        })
+        const data = (await res.json()) as {
+          success?: boolean
+          merged?: AnalysisFields
+          visionAnalysis?: AnalysisFields
+          webEnrichment?: AnalysisFields | null
+          webSearchUsed?: boolean
+          message?: string
+          error?: string
+        }
+        if (!data.success || !data.merged) {
+          alert('Analyse fehlgeschlagen: ' + (data.error || 'Unbekannt'))
+          return
+        }
+        setVisionAnalysis(data.visionAnalysis ?? null)
+        setWebEnrichment(data.webEnrichment ?? null)
+        setMergedAnalysis(data.merged)
+        setWebSearchUsed(!!data.webSearchUsed)
+        setAnalysisMessage(data.message ?? null)
+        setFormData((prev) => ({
+          ...prev,
+          ...applyMergedToForm(data.merged!),
+        }))
+      } catch {
+        alert('Netzwerkfehler bei der Analyse.')
+      } finally {
+        setIsAnalyzing(false)
+      }
+    },
+    [],
+  )
+
+  const loadImageFromFile = useCallback(
+    (file: File, source: 'camera' | 'gallery') => {
+      if (!file.type.startsWith('image/')) {
+        alert('Bitte ein Bild (Foto) wählen.')
+        return
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        alert('Datei ist zu groß (max. 15 MB).')
+        return
+      }
+      const mime = file.type || 'image/jpeg'
+      setLastCaptureSource(source)
+      setMimeType(mime)
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string
+        const b64 = dataUrl.split(',')[1]
+        setImagePreview(dataUrl)
+        setImageBase64(b64)
+        setVisionAnalysis(null)
+        setWebEnrichment(null)
+        setMergedAnalysis(null)
+        setAnalysisMessage(null)
+        setWebSearchUsed(false)
+        setPreferManualOnly(false)
+        if (source === 'camera') {
+          queueMicrotask(() => {
+            void analyzeWithData(b64, mime)
+          })
+        }
+      }
+      reader.readAsDataURL(file)
+    },
+    [analyzeWithData],
+  )
 
   useEffect(() => {
     async function loadObjects() {
@@ -165,96 +214,9 @@ function NewAssetForm() {
     loadObjects()
   }, [supabase, searchParams])
 
-  const stopLiveCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop())
-    streamRef.current = null
-    setLiveOpen(false)
-  }, [])
-
-  useEffect(() => () => stopLiveCamera(), [stopLiveCamera])
-
-  const openLiveCamera = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      alert('Kamera wird auf diesem Gerät nicht unterstützt. Nutze „Foto“ oder „Galerie“.')
-      return
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false,
-      })
-      streamRef.current = stream
-      setLiveOpen(true)
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          void videoRef.current.play()
-        }
-      })
-    } catch {
-      alert('Kamera konnte nicht gestartet werden. Bitte Berechtigung erteilen oder Galerie nutzen.')
-    }
-  }
-
-  const captureLiveFrame = () => {
-    const v = videoRef.current
-    if (!v?.videoWidth) return
-    const canvas = document.createElement('canvas')
-    canvas.width = v.videoWidth
-    canvas.height = v.videoHeight
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.drawImage(v, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
-    setImagePreview(dataUrl)
-    setImageBase64(dataUrl.split(',')[1])
-    setMimeType('image/jpeg')
-    setVisionAnalysis(null)
-    setWebEnrichment(null)
-    setMergedAnalysis(null)
-    setAnalysisMessage(null)
-    setWebSearchUsed(false)
-    setPreferManualOnly(false)
-    stopLiveCamera()
-  }
-
   const analyze = async () => {
     if (!imageBase64) return
-    setIsAnalyzing(true)
-    setAnalysisMessage(null)
-    try {
-      const res = await fetch('/api/analyze-asset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64, mimeType }),
-      })
-      const data = (await res.json()) as {
-        success?: boolean
-        merged?: AnalysisFields
-        visionAnalysis?: AnalysisFields
-        webEnrichment?: AnalysisFields | null
-        webSearchUsed?: boolean
-        message?: string
-        error?: string
-      }
-      if (!data.success || !data.merged) {
-        alert('Analyse fehlgeschlagen: ' + (data.error || 'Unbekannt'))
-        return
-      }
-      setVisionAnalysis(data.visionAnalysis ?? null)
-      setWebEnrichment(data.webEnrichment ?? null)
-      setMergedAnalysis(data.merged)
-      setWebSearchUsed(!!data.webSearchUsed)
-      setAnalysisMessage(data.message ?? null)
-      setFormData((prev) => ({
-        ...prev,
-        ...applyMergedToForm(data.merged!),
-      }))
-    } catch {
-      alert('Netzwerkfehler bei der Analyse.')
-    } finally {
-      setIsAnalyzing(false)
-    }
+    await analyzeWithData(imageBase64, mimeType)
   }
 
   const applySuggestionAgain = () => {
@@ -363,7 +325,7 @@ function NewAssetForm() {
 
       <h1 className="mb-2 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">Neue Anlage</h1>
       <p className="mb-6 text-base text-slate-400 sm:mb-8 sm:text-lg">
-        Mobil: Kamera oder Galerie – anschließend wertet Grok das Bild aus und reichert Daten per Websuche an.
+        Kamera mit automatischer Auswertung, Gallerie ohne.
       </p>
 
       {/* File inputs außerhalb von display:none-Kontext, damit Desktop & Mobil zuverlässig öffnen */}
@@ -377,7 +339,7 @@ function NewAssetForm() {
           tabIndex={-1}
           onChange={(e) => {
             const f = e.target.files?.[0]
-            if (f) loadImageFromFile(f)
+            if (f) loadImageFromFile(f, 'camera')
             e.target.value = ''
           }}
         />
@@ -389,100 +351,38 @@ function NewAssetForm() {
           tabIndex={-1}
           onChange={(e) => {
             const f = e.target.files?.[0]
-            if (f) loadImageFromFile(f)
+            if (f) loadImageFromFile(f, 'gallery')
             e.target.value = ''
           }}
         />
       </div>
 
-      {/* Mobil: drei klare Zugänge */}
-      <div className="mb-6 space-y-2 md:hidden sm:mb-8">
-        <p className="text-[10px] font-semibold tracking-widest text-slate-500 sm:text-xs">FOTO ERFASSEN</p>
-        <div className="grid grid-cols-1 gap-2 sm:gap-3">
+      {/* Zwei Zugänge: Kamera (mit Auto-KI) · Gallerie (Bild wie gewählt) */}
+      <div className="mb-6 space-y-3 sm:mb-8">
+        <p className="text-[10px] font-semibold tracking-widest text-slate-500 sm:text-xs">FOTO</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <button
             type="button"
+            aria-label="Foto mit der Kamera aufnehmen"
             onClick={() => cameraInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-800/60 bg-emerald-950/40 py-3.5 text-base font-medium text-emerald-100 transition active:scale-[0.99] sm:gap-3 sm:rounded-3xl sm:py-4 sm:text-lg"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-800/60 bg-emerald-950/40 py-3.5 text-base font-medium text-emerald-100 transition hover:border-emerald-600 active:scale-[0.99] sm:gap-3 sm:rounded-3xl sm:py-4 sm:text-lg"
           >
             <Camera className="h-6 w-6 shrink-0 text-emerald-400 sm:h-7 sm:w-7" />
-            Kamera (Foto)
+            Kamera
           </button>
           <button
             type="button"
+            aria-label="Bild aus der Gallerie auswählen"
             onClick={() => galleryInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 py-3.5 text-base font-medium text-slate-200 transition active:scale-[0.99] sm:gap-3 sm:rounded-3xl sm:py-4 sm:text-lg"
+            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 py-3.5 text-base font-medium text-slate-200 transition hover:border-slate-500 active:scale-[0.99] sm:gap-3 sm:rounded-3xl sm:py-4 sm:text-lg"
           >
             <Images className="h-6 w-6 shrink-0 text-slate-400 sm:h-7 sm:w-7" />
-            Galerie
-          </button>
-          <button
-            type="button"
-            onClick={openLiveCamera}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/50 py-3 text-sm font-medium text-slate-300 sm:rounded-3xl sm:py-3.5 sm:text-base"
-          >
-            <Sparkles className="h-5 w-5 shrink-0 text-amber-400" />
-            <span className="text-left leading-snug">Live-Sucher (Vorschau &amp; Auslösen)</span>
+            Gallerie
           </button>
         </div>
       </div>
 
-      {liveOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-            <span className="text-sm text-slate-400">Kamera – rückwärtige Linse bevorzugt</span>
-            <button type="button" onClick={stopLiveCamera} className="p-2 rounded-full bg-slate-800 text-white">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          <div className="flex-1 flex items-center justify-center p-2 min-h-0">
-            <video ref={videoRef} playsInline muted className="max-h-full max-w-full rounded-2xl object-contain" />
-          </div>
-          <div className="p-6 pb-8 safe-area-pb">
-            <button
-              type="button"
-              onClick={captureLiveFrame}
-              className="w-full flex items-center justify-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-500 py-4 text-lg font-semibold text-white shadow-lg shadow-emerald-900/40"
-            >
-              <Camera className="w-6 h-6" />
-              Aufnehmen
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="card space-y-6 p-5 sm:space-y-8 sm:p-6 lg:p-8">
-        {/* Desktop: Foto */}
-        <div className="hidden md:block">
-          <label className="block text-sm font-medium mb-3 text-slate-300">Foto der Anlage</label>
-          {!imagePreview ? (
-            <div className="grid sm:grid-cols-3 gap-4">
-              <button
-                type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="flex flex-col items-center gap-2 rounded-3xl border border-emerald-800/40 bg-emerald-950/20 py-7 transition hover:border-emerald-600 sm:gap-3 sm:py-10"
-              >
-                <Camera className="w-10 h-10 text-emerald-400" />
-                <span className="font-medium">Kamera / Webcam</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => galleryInputRef.current?.click()}
-                className="flex flex-col items-center gap-2 rounded-3xl border border-slate-700 py-7 transition hover:border-slate-500 sm:gap-3 sm:py-10"
-              >
-                <Upload className="w-10 h-10 text-slate-400" />
-                <span className="font-medium">Datei wählen</span>
-              </button>
-              <button
-                type="button"
-                onClick={openLiveCamera}
-                className="flex flex-col items-center gap-2 rounded-3xl border border-slate-700 py-7 transition hover:border-amber-700/50 sm:gap-3 sm:py-10"
-              >
-                <Sparkles className="w-10 h-10 text-amber-400" />
-                <span className="font-medium">Live-Sucher</span>
-              </button>
-            </div>
-          ) : null}
-        </div>
 
         {/* Vorschau (alle Bildschirmgrößen) */}
         {imagePreview ? (
@@ -494,6 +394,7 @@ function NewAssetForm() {
                 onClick={() => {
                   setImagePreview(null)
                   setImageBase64(null)
+                  setLastCaptureSource(null)
                   setVisionAnalysis(null)
                   setWebEnrichment(null)
                   setMergedAnalysis(null)
@@ -508,51 +409,73 @@ function NewAssetForm() {
             </div>
             <img
               src={imagePreview}
-              alt=""
+              alt="Vorschau des ausgewählten Fotos"
               className="max-h-[min(42vh,380px)] w-full rounded-2xl bg-black object-contain sm:max-h-[min(52vh,420px)] sm:rounded-3xl"
             />
           </div>
-        ) : (
-          /* Mobile haben oben bereits Buttons — hier nur Platzhinweis */
-          <p className="md:hidden text-sm text-slate-500">
-            Sobald ein Foto gewählt ist, erscheint die Vorschau hier und du kannst die KI-Analyse starten.
-          </p>
-        )}
+        ) : null}
 
         {imagePreview && !mergedAnalysis && !preferManualOnly && (
           <div className="space-y-3">
-            <button
-              type="button"
-              onClick={analyze}
-              disabled={isAnalyzing}
-              className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 sm:gap-3 sm:py-4 sm:text-lg"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  Bild & Websuche durch Grok…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5" />
-                  Mit Grok auswerten
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPreferManualOnly(true)}
-              className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
-            >
-              Ohne KI – nur manuell ausfüllen
-            </button>
+            {lastCaptureSource === 'gallery' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={analyze}
+                  disabled={isAnalyzing}
+                  className="btn-primary flex w-full items-center justify-center gap-2 py-3.5 sm:gap-3 sm:py-4 sm:text-lg"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                      Bild & Websuche…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      Mit Grok auswerten
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreferManualOnly(true)}
+                  className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
+                >
+                  Ohne KI – nur manuell ausfüllen
+                </button>
+              </>
+            ) : (
+              <>
+                {isAnalyzing ? (
+                  <div className="rounded-2xl border border-emerald-900/50 bg-emerald-950/25 px-4 py-4 sm:px-5 sm:py-5">
+                    <div className="flex items-start gap-3">
+                      <Loader2 className="mt-0.5 h-6 w-6 shrink-0 animate-spin text-emerald-400" />
+                      <div>
+                        <p className="text-sm font-medium text-slate-200">KI wertet Ihr Foto aus…</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={analyze}
+                    className="btn-secondary flex w-full items-center justify-center gap-2 py-3.5 sm:py-4"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    KI erneut auswerten
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreferManualOnly(true)}
+                  className="w-full text-sm text-slate-500 hover:text-slate-300 py-2"
+                >
+                  Ohne KI – nur manuell ausfüllen
+                </button>
+              </>
+            )}
           </div>
-        )}
-
-        {isAnalyzing && (
-          <p className="text-sm text-center text-slate-400 px-4">
-            Zuerst Bildauswertung, danach automatische Websuche zu Hersteller/Modell – kann einige Sekunden dauern.
-          </p>
         )}
 
         {mergedAnalysis && (
