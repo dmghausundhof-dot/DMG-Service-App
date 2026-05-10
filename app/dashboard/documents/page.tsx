@@ -33,6 +33,8 @@ function getTypeBadge(type: string) {
       return { label: 'Angebot', bg: 'bg-purple-600/20 text-purple-400 border-purple-900/50' }
     case 'report':
       return { label: 'Servicebericht', bg: 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50' }
+    case 'customer_upload':
+      return { label: 'Kunden-Datei', bg: 'bg-slate-600/20 text-slate-300 border-slate-700/50' }
     default:
       return { label: type, bg: 'bg-slate-600/20 text-slate-400 border-slate-900/50' }
   }
@@ -45,6 +47,7 @@ export default function DocumentsListPage() {
   const [totalDocuments, setTotalDocuments] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     async function loadDocuments() {
@@ -56,18 +59,58 @@ export default function DocumentsListPage() {
         return
       }
 
-      const pid = await getOrCreateProfileId(supabase, user)
+      await getOrCreateProfileId(supabase, user)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-      if (pid) {
+      const admin = profile?.role === 'admin'
+      setIsAdmin(!!admin)
+
+      const normalizeRows = (rows: Record<string, unknown>[]): Document[] =>
+        rows.map((row) => {
+          const rel = row.objects as
+            | { name: string; city: string | null }
+            | { name: string; city: string | null }[]
+            | null
+          const objects = Array.isArray(rel) ? rel[0] ?? null : rel
+          return {
+            ...(row as unknown as Document),
+            objects,
+          }
+        })
+
+      if (admin) {
+        const { data: documentsData, count } = await supabase
+          .from('documents')
+          .select(`
+            id,
+            type,
+            title,
+            file_url,
+            file_name,
+            file_size,
+            created_at,
+            object_id,
+            objects (name, city)
+          `, { count: 'exact' })
+          .order('created_at', { ascending: false })
+
+        setDocuments(normalizeRows((documentsData as Record<string, unknown>[]) ?? []))
+        setTotalDocuments(count || 0)
+      } else if (profile?.id) {
+        const pid = profile.id
         const { data: userObjs } = await supabase.from('objects').select('id').eq('profile_id', pid)
         const objectIds = userObjs?.map((o) => o.id) ?? []
         if (objectIds.length === 0) {
           setDocuments([])
           setTotalDocuments(0)
         } else {
-        const { data: documentsData, count } = await supabase
-          .from('documents')
-          .select(`
+          const { data: documentsData, count } = await supabase
+            .from('documents')
+            .select(`
             id, 
             type, 
             title, 
@@ -78,21 +121,15 @@ export default function DocumentsListPage() {
             object_id,
             objects (name, city)
           `, { count: 'exact' })
-          .in('object_id', objectIds)
-          .order('created_at', { ascending: false })
+            .in('object_id', objectIds)
+            .order('created_at', { ascending: false })
 
-        const rows = documentsData ?? []
-        const normalized: Document[] = rows.map((row) => {
-          const rel = row.objects as
-            | { name: string; city: string | null }
-            | { name: string; city: string | null }[]
-            | null
-          const objects = Array.isArray(rel) ? rel[0] ?? null : rel
-          return { ...row, objects }
-        })
-        setDocuments(normalized)
-        setTotalDocuments(count || 0)
+          setDocuments(normalizeRows((documentsData as Record<string, unknown>[]) ?? []))
+          setTotalDocuments(count || 0)
         }
+      } else {
+        setDocuments([])
+        setTotalDocuments(0)
       }
       setLoading(false)
     }
@@ -245,25 +282,38 @@ export default function DocumentsListPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div>
           <div className="text-emerald-500 text-sm font-semibold tracking-[2px] mb-2">DOKUMENTENÜBERSICHT</div>
-          <h1 className="text-5xl font-semibold tracking-tighter">Meine Dokumente</h1>
+          <h1 className="text-5xl font-semibold tracking-tighter">
+            {isAdmin ? 'Alle Dokumente' : 'Meine Dokumente'}
+          </h1>
           <p className="text-xl text-slate-400 mt-2">
-            {totalDocuments} Dokumente • Angebote, Rechnungen und Serviceberichte
+            {totalDocuments}{' '}
+            {isAdmin
+              ? ' Einträge (Belege & Kunden-Dateien)'
+              : ' Dokumente – Belege durch DMG, eigene Bilder oder PDFs von Ihnen'}
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 justify-end">
           <button 
             onClick={exportToPDF}
             className="btn-secondary flex items-center gap-2 px-5 py-3 text-sm"
           >
             📄 Als PDF exportieren
           </button>
+          {isAdmin && (
+            <Link
+              href="/dashboard/admin/documents/new"
+              className="btn-secondary flex items-center gap-2 px-5 py-3 text-sm"
+            >
+              Admin: Beleg anlegen
+            </Link>
+          )}
           <Link 
             href="/dashboard/documents/new" 
             className="btn-primary flex items-center gap-3 text-base px-8 py-4 w-fit"
           >
             <Plus className="w-5 h-5" />
-            Dokument hochladen
+            Datei hochladen
           </Link>
         </div>
       </div>
@@ -307,15 +357,24 @@ export default function DocumentsListPage() {
           </div>
           <h3 className="text-3xl font-semibold mb-4">Noch keine Dokumente</h3>
           <p className="text-xl text-slate-400 max-w-md mx-auto mb-8">
-            Laden Sie Angebote, Rechnungen oder Serviceberichte hoch, um sie zentral zu verwalten.
+            {isAdmin
+              ? 'Noch keine Einträge. Kunden-Dateien erscheinen hier, sobald Kunden sie hochladen; Belegen legen Sie unter „Admin: Belege“ an.'
+              : 'DMG kann Ihre Rechnungen & Berichte hier ablegen. Sie können eigene Fotos oder PDFs mit „Datei hochladen“ ergänzen.'}
           </p>
-          <Link 
-            href="/dashboard/documents/new" 
-            className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Erstes Dokument hochladen
-          </Link>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Link href="/dashboard/documents/new" className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-lg">
+              <Plus className="w-5 h-5" />
+              Datei hochladen
+            </Link>
+            {isAdmin && (
+              <Link
+                href="/dashboard/admin/documents/new"
+                className="btn-secondary inline-flex items-center gap-3 px-8 py-4 text-lg"
+              >
+                Beleg für Kunden
+              </Link>
+            )}
+          </div>
         </div>
       ) : filteredDocuments.length === 0 && searchTerm ? (
         <div className="card p-16 text-center">

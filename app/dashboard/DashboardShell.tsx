@@ -12,7 +12,8 @@ import {
   LogOut, 
   Menu, 
   X,
-  Shield
+  Shield,
+  FileUp,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -27,7 +28,10 @@ const baseNavItems = [
   { href: '/dashboard/profile', label: 'Profil', icon: User },
 ]
 
-const adminNavItem = { href: '/dashboard/admin/appointments', label: 'Admin: Anfragen', icon: Shield }
+const adminNavItems = [
+  { href: '/dashboard/admin/appointments', label: 'Admin: Anfragen', icon: Shield },
+  { href: '/dashboard/admin/documents/new', label: 'Admin: Belege', icon: FileUp },
+]
 
 export default function DashboardShell({
   children,
@@ -92,7 +96,7 @@ export default function DashboardShell({
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-8">
           <div className="px-3 mb-4 text-xs font-semibold text-slate-500 tracking-widest">MENÜ</div>
           <nav className="space-y-1">
-            {(userRole === 'admin' ? [...baseNavItems, adminNavItem] : baseNavItems).map((item) => {
+            {(userRole === 'admin' ? [...baseNavItems, ...adminNavItems] : baseNavItems).map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href || 
                 (item.href !== '/dashboard' && pathname.startsWith(item.href))
@@ -217,7 +221,7 @@ export default function DashboardShell({
             </div>
 
             <nav className="space-y-2">
-              {(userRole === 'admin' ? [...baseNavItems, adminNavItem] : baseNavItems).map((item) => {
+              {(userRole === 'admin' ? [...baseNavItems, ...adminNavItems] : baseNavItems).map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || 
                   (item.href !== '/dashboard' && pathname.startsWith(item.href))

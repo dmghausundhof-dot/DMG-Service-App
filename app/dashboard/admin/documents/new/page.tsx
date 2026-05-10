@@ -7,16 +7,30 @@ import { ArrowLeft, Upload, Loader2, CheckCircle, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
-const ACCEPT = '.pdf,.jpg,.jpeg,.png,.webp,.heic,.gif'
+type ObjectRow = {
+  id: string
+  name: string
+  city: string | null
+  profiles?: { full_name: string | null } | { full_name: string | null }[] | null
+}
 
-function CustomerUploadForm() {
+function customerName(row: ObjectRow): string {
+  const p = row.profiles
+  if (!p) return ''
+  const entry = Array.isArray(p) ? p[0] : p
+  return entry?.full_name?.trim() || ''
+}
+
+function AdminBusinessDocumentForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const preObjectId = searchParams.get('object_id')
   const supabase = createClient()
 
-  const [objects, setObjects] = useState<{ id: string; name: string; city: string | null }[]>([])
+  const [allowed, setAllowed] = useState(false)
+  const [objects, setObjects] = useState<ObjectRow[]>([])
   const [selectedObjectId, setSelectedObjectId] = useState('')
+  const [documentType, setDocumentType] = useState<'offer' | 'invoice' | 'report'>('invoice')
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState('')
@@ -24,17 +38,35 @@ function CustomerUploadForm() {
   const [uploadSuccess, setUploadSuccess] = useState(false)
 
   useEffect(() => {
-    async function loadObjects() {
+    async function gateAndLoad() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const pid = await getOrCreateProfileId(supabase, user)
-      if (pid) {
-        const { data } = await supabase.from('objects').select('id, name, city').eq('profile_id', pid).order('name')
-        if (data) setObjects(data)
+      if (!user) {
+        router.replace('/login')
+        return
       }
+      await getOrCreateProfileId(supabase, user)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (profile?.role !== 'admin') {
+        router.replace('/dashboard/documents')
+        return
+      }
+
+      setAllowed(true)
+
+      const { data, error } = await supabase
+        .from('objects')
+        .select('id, name, city, profiles (full_name)')
+        .order('created_at', { ascending: false })
+
+      if (!error && data) setObjects(data as ObjectRow[])
     }
-    loadObjects()
-  }, [supabase])
+    gateAndLoad()
+  }, [router, supabase])
 
   useEffect(() => {
     if (preObjectId && objects.some((o) => o.id === preObjectId)) {
@@ -51,12 +83,11 @@ function CustomerUploadForm() {
     }
     setFile(selectedFile)
     setFileName(selectedFile.name)
-    if (!title.trim()) setTitle(selectedFile.name.replace(/\.[^.]+$/, ''))
   }
 
   const uploadDocument = async () => {
-    if (!selectedObjectId || !file) {
-      alert('Bitte Objekt und Datei auswählen.')
+    if (!selectedObjectId || !file || !title.trim()) {
+      alert('Bitte Kunden-Objekt, Titel und Datei auswählen.')
       return
     }
 
@@ -65,8 +96,6 @@ function CustomerUploadForm() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Nicht eingeloggt')
 
-      const displayTitle = title.trim() || file.name
-
       const filePath = `documents/${selectedObjectId}/${Date.now()}-${file.name}`
       const { error: uploadError } = await supabase.storage
         .from('documents')
@@ -74,7 +103,7 @@ function CustomerUploadForm() {
 
       if (uploadError) {
         if (uploadError.message.includes('Bucket not found')) {
-          throw new Error('Storage-Bucket "documents" existiert nicht. Bitte in Supabase anlegen.')
+          throw new Error('Storage-Bucket "documents" existiert nicht.')
         }
         throw uploadError
       }
@@ -83,8 +112,8 @@ function CustomerUploadForm() {
 
       const { error: insertError } = await supabase.from('documents').insert({
         object_id: selectedObjectId,
-        type: 'customer_upload',
-        title: displayTitle,
+        type: documentType,
+        title: title.trim(),
         file_url: publicUrl,
         file_name: file.name,
         file_size: file.size,
@@ -104,6 +133,15 @@ function CustomerUploadForm() {
     }
   }
 
+  if (!allowed) {
+    return (
+      <div className="max-w-3xl mx-auto py-20 text-center text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4 text-emerald-500" />
+        Zugriff wird geprüft…
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       <Link href="/dashboard/documents" className="flex items-center gap-2 text-slate-400 hover:text-white mb-8">
@@ -111,19 +149,16 @@ function CustomerUploadForm() {
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-5xl font-semibold tracking-tighter mb-3">Datei hochladen</h1>
+        <h1 className="text-5xl font-semibold tracking-tighter mb-3">Beleg für Kunden</h1>
         <p className="text-xl text-slate-400">
-          Bilder oder PDFs zu Ihrem Objekt – z. B. Fotos der Anlage, Verkabelung oder Herstellerdokumente.
-        </p>
-        <p className="text-sm text-slate-500 mt-3">
-          Rechnungen, Angebote und Serviceberichte legt ausschließlich DMG Service im Admin-Bereich an.
+          Nur für den Betrieb: Rechnungen, Angebote und Serviceberichte dem passenden Objekt zuordnen.
         </p>
       </div>
 
       <div className="card p-8">
         <div className="space-y-8">
           <div>
-            <label className="text-sm text-slate-300 block mb-2">Objekt *</label>
+            <label className="text-sm text-slate-300 block mb-2">Kunden-Objekt *</label>
             <select
               value={selectedObjectId}
               onChange={(e) => setSelectedObjectId(e.target.value)}
@@ -131,47 +166,70 @@ function CustomerUploadForm() {
               required
             >
               <option value="">— Objekt auswählen —</option>
-              {objects.map((obj) => (
-                <option key={obj.id} value={obj.id}>
-                  {obj.name} {obj.city && `(${obj.city})`}
-                </option>
-              ))}
+              {objects.map((obj) => {
+                const cn = customerName(obj)
+                return (
+                  <option key={obj.id} value={obj.id}>
+                    {obj.name}
+                    {obj.city ? ` (${obj.city})` : ''}
+                    {cn ? ` – ${cn}` : ''}
+                  </option>
+                )
+              })}
             </select>
-            {objects.length === 0 && (
-              <p className="text-xs text-amber-400 mt-1">Noch keine Objekte. Bitte zuerst ein Objekt anlegen.</p>
-            )}
           </div>
 
           <div>
-            <label className="text-sm text-slate-300 block mb-2">Kurzbeschriftung (optional)</label>
+            <label className="text-sm text-slate-300 block mb-2">Dokumententyp *</label>
+            <div className="flex gap-3">
+              {[
+                { value: 'invoice' as const, label: 'Rechnung', icon: '📄' },
+                { value: 'offer' as const, label: 'Angebot', icon: '📝' },
+                { value: 'report' as const, label: 'Servicebericht', icon: '📋' },
+              ].map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setDocumentType(type.value)}
+                  className={`flex-1 p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                    documentType === type.value
+                      ? 'border-emerald-500 bg-emerald-600/10 text-emerald-400'
+                      : 'border-slate-700 hover:border-slate-600 text-slate-400'
+                  }`}
+                >
+                  <span className="text-2xl">{type.icon}</span>
+                  <span className="font-medium">{type.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm text-slate-300 block mb-2">Titel / Bezug *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="input w-full text-lg"
-              placeholder="z. B. Foto PV-Modul Dach Süd"
+              placeholder="z. B. Rechnung Nr. 2026-048 – Wartung"
+              required
             />
           </div>
 
           <div>
-            <label className="text-sm text-slate-300 block mb-2">Datei *</label>
+            <label className="text-sm text-slate-300 block mb-2">Datei (PDF, JPG, PNG) *</label>
             {!file ? (
               <div
-                role="button"
-                tabIndex={0}
-                onClick={() => document.getElementById('customer-file-upload')?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') document.getElementById('customer-file-upload')?.click()
-                }}
+                onClick={() => document.getElementById('admin-file-upload')?.click()}
                 className="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-3xl p-12 text-center cursor-pointer bg-slate-900/50 transition"
               >
                 <Upload className="mx-auto w-12 h-12 text-emerald-500 mb-4" />
                 <p className="font-medium mb-1">Datei auswählen</p>
-                <p className="text-sm text-slate-500">PDF oder Bild • max. 10 MB</p>
+                <p className="text-sm text-slate-500">PDF, JPG oder PNG • max. 10 MB</p>
                 <input
-                  id="customer-file-upload"
+                  id="admin-file-upload"
                   type="file"
-                  accept={ACCEPT}
+                  accept=".pdf,.jpg,.jpeg,.png"
                   className="hidden"
                   onChange={handleFileSelect}
                 />
@@ -206,7 +264,7 @@ function CustomerUploadForm() {
           <button
             type="button"
             onClick={uploadDocument}
-            disabled={isUploading || !selectedObjectId || !file}
+            disabled={isUploading || !selectedObjectId || !file || !title.trim()}
             className="btn-primary flex-1 py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-50"
           >
             {isUploading ? (
@@ -217,10 +275,10 @@ function CustomerUploadForm() {
             ) : uploadSuccess ? (
               <>
                 <CheckCircle className="w-5 h-5" />
-                Erfolgreich
+                Gespeichert
               </>
             ) : (
-              'Datei senden'
+              'Beleg speichern'
             )}
           </button>
           <Link href="/dashboard/documents" className="btn-secondary px-8 py-4 text-lg">
@@ -232,14 +290,14 @@ function CustomerUploadForm() {
   )
 }
 
-export default function CustomerUploadPage() {
+export default function AdminBusinessDocumentPage() {
   return (
     <Suspense
       fallback={
         <div className="max-w-3xl mx-auto py-24 text-center text-slate-400">Laden…</div>
       }
     >
-      <CustomerUploadForm />
+      <AdminBusinessDocumentForm />
     </Suspense>
   )
 }

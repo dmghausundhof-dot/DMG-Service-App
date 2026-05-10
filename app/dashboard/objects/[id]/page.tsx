@@ -519,10 +519,10 @@ export default function ObjectDetailPage() {
               <FileText className="w-6 h-6 text-emerald-500" /> Dokumente
             </h2>
             <Link 
-              href={`/dashboard/documents?object_id=${object.id}`}
+              href={`/dashboard/documents/new?object_id=${object.id}`}
               className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
             >
-              <Plus className="w-4 h-4" /> Hochladen
+              <Plus className="w-4 h-4" /> Datei hochladen
             </Link>
           </div>
 
@@ -542,9 +542,16 @@ export default function ObjectDetailPage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate group-hover:text-emerald-400 transition-colors">{doc.title}</div>
                     <div className="text-xs text-slate-400 flex items-center gap-1">
-                      {doc.type === 'invoice' ? 'Rechnung' : 
-                       doc.type === 'offer' ? 'Angebot' : 'Servicebericht'} • 
-                      {new Date(doc.created_at).toLocaleDateString('de-DE')}
+                      {doc.type === 'invoice'
+                        ? 'Rechnung'
+                        : doc.type === 'offer'
+                          ? 'Angebot'
+                          : doc.type === 'report'
+                            ? 'Servicebericht'
+                            : doc.type === 'customer_upload'
+                              ? 'Kunden-Datei'
+                              : doc.type}{' '}
+                      • {new Date(doc.created_at).toLocaleDateString('de-DE')}
                     </div>
                   </div>
                 </a>
@@ -554,7 +561,7 @@ export default function ObjectDetailPage() {
             <div className="card p-8 text-center text-slate-400">
               <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p className="text-sm">Keine Dokumente für dieses Objekt.</p>
-              <Link href="/dashboard/documents" className="text-emerald-400 text-sm mt-2 inline-block">→ Dokument hochladen</Link>
+              <Link href={`/dashboard/documents/new?object_id=${object.id}`} className="text-emerald-400 text-sm mt-2 inline-block">→ Eigene Datei hochladen</Link>
             </div>
           )}
         </div>
