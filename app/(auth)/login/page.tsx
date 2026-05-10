@@ -120,9 +120,23 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-[11px] text-slate-500 sm:mt-8 sm:text-xs">
-          Probleme beim Anmelden? <a href="mailto:info@dmgservice.org" className="underline">Kontaktieren Sie uns</a>
-        </p>
+        <div className="mt-6 space-y-2 text-center text-[11px] text-slate-500 sm:mt-8 sm:text-xs">
+          <p>
+            Probleme beim Anmelden?{' '}
+            <a href="mailto:info@dmgservice.org" className="underline">
+              Kontaktieren Sie uns
+            </a>
+          </p>
+          <p className="text-slate-600">
+            <Link href="/impressum" className="hover:text-slate-400 hover:underline">
+              Impressum
+            </Link>
+            {' · '}
+            <Link href="/datenschutz" className="hover:text-slate-400 hover:underline">
+              Datenschutz
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )
