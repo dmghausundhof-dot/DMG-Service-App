@@ -62,21 +62,24 @@ export default async function DashboardOverview() {
     .in('object_id', objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000'])
 
   // Full data for object-specific widgets
-  const { data: objects = [] } = await supabase
+  const { data: objectsRows } = await supabase
     .from('objects')
     .select('id, name, street, city')
     .eq('profile_id', profile?.id || '')
     .order('created_at', { ascending: false })
+  const objects = objectsRows ?? []
 
-  const { data: assets = [] } = await supabase
+  const { data: assetsRows } = await supabase
     .from('assets')
     .select('id, name, object_id, next_maintenance_due')
     .in('object_id', objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000'])
+  const assets = assetsRows ?? []
 
-  const { data: appointments = [] } = await supabase
+  const { data: appointmentsRows } = await supabase
     .from('appointments')
     .select('id, object_id, preferred_date, status')
     .in('object_id', objectIds.length > 0 ? objectIds : ['00000000-0000-0000-0000-000000000000'])
+  const appointments = appointmentsRows ?? []
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -128,10 +131,10 @@ export default async function DashboardOverview() {
             <div className="text-red-500">
               <Wrench className="w-8 h-8" />
             </div>
-            <div className="text-5xl font-semibold tabular-nums tracking-tighter text-red-400">{overdueMaintenances}</div>
+            <div className="text-5xl font-semibold tabular-nums tracking-tighter text-red-400">{overdueMaintenances ?? 0}</div>
           </div>
           <div className="font-semibold text-xl">Überfällige Wartungen</div>
-          <p className="text-slate-400 mt-1.5 text-sm">{overdueMaintenances > 0 ? 'Bitte bald einen Termin vereinbaren!' : 'Alle Wartungen sind aktuell.'}</p>
+          <p className="text-slate-400 mt-1.5 text-sm">{(overdueMaintenances ?? 0) > 0 ? 'Bitte bald einen Termin vereinbaren!' : 'Alle Wartungen sind aktuell.'}</p>
         </div>
 
         <div className="card p-8 group hover:border-emerald-500/50 transition-all">

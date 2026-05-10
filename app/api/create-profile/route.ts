@@ -45,10 +45,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false }, { status: 500 })
   }
 }
-```
-
-Perfect. Now the registration will automatically create profile and "Mein Haus" object.
-
-I also need to create the lib/supabase files if not there.
-
-Let's check.

@@ -117,7 +117,16 @@ export default function AssetsListPage() {
         }
 
         const { data: assetsData, count } = await query
-        setAssets((assetsData as Asset[]) || [])
+        const rows = assetsData ?? []
+        const normalized: Asset[] = rows.map((row) => {
+          const rel = row.objects as
+            | { name: string; city: string | null }
+            | { name: string; city: string | null }[]
+            | null
+          const objects = Array.isArray(rel) ? rel[0] ?? null : rel
+          return { ...row, objects }
+        })
+        setAssets(normalized)
         setTotalAssets(count || 0)
       }
       setLoading(false)

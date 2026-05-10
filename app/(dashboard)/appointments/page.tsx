@@ -102,7 +102,16 @@ export default function AppointmentsListPage() {
           .order('preferred_date', { ascending: true })
           .limit(50)
 
-        setAppointments((appointmentsData as Appointment[]) || [])
+        const rows = appointmentsData ?? []
+        const normalized: Appointment[] = rows.map((row) => {
+          const rel = row.objects as
+            | { name: string; city: string | null }
+            | { name: string; city: string | null }[]
+            | null
+          const objects = Array.isArray(rel) ? rel[0] ?? null : rel
+          return { ...row, objects }
+        })
+        setAppointments(normalized)
         setTotalAppointments(count || 0)
       }
       setLoading(false)

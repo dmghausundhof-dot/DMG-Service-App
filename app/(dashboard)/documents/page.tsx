@@ -77,7 +77,16 @@ export default function DocumentsListPage() {
           `, { count: 'exact' })
           .order('created_at', { ascending: false })
 
-        setDocuments((documentsData as Document[]) || [])
+        const rows = documentsData ?? []
+        const normalized: Document[] = rows.map((row) => {
+          const rel = row.objects as
+            | { name: string; city: string | null }
+            | { name: string; city: string | null }[]
+            | null
+          const objects = Array.isArray(rel) ? rel[0] ?? null : rel
+          return { ...row, objects }
+        })
+        setDocuments(normalized)
         setTotalDocuments(count || 0)
       }
       setLoading(false)

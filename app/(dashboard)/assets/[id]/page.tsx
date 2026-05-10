@@ -37,7 +37,10 @@ interface MaintenanceHistoryItem {
   notes: string
 }
 
-function getAssetStatus(asset: Partial<Asset>) {
+function getAssetStatus(asset: {
+  next_maintenance_due?: string | null
+  last_maintenance?: string | null
+}) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
