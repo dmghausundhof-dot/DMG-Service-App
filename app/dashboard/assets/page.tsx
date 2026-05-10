@@ -19,6 +19,7 @@ interface Asset {
   model: string | null
   last_maintenance: string | null
   next_maintenance_due: string | null
+  maintenance_interval_months: number | null
   image_url: string | null
   object_id: string
   objects: {
@@ -107,6 +108,7 @@ export default function AssetsListPage() {
             model, 
             last_maintenance, 
             next_maintenance_due, 
+            maintenance_interval_months,
             image_url, 
             object_id,
             objects (name, city)
@@ -127,7 +129,11 @@ export default function AssetsListPage() {
             | { name: string; city: string | null }[]
             | null
           const objects = Array.isArray(rel) ? rel[0] ?? null : rel
-          return { ...row, objects }
+          return {
+            ...row,
+            objects,
+            category: row.category === 'Wärmepumpe' ? 'Heizung' : row.category,
+          }
         })
         setAssets(normalized)
         setTotalAssets(count || 0)
@@ -153,6 +159,7 @@ export default function AssetsListPage() {
 
   const exportToPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+    const pdfColWidths = [28, 23, 39, 34, 26, 22, 29, 31] as const
     const pageWidth = 297
     const pageHeight = 210
     const margin = 15
@@ -205,20 +212,27 @@ export default function AssetsListPage() {
         yPos = 36
       }
       
-      // Table header
-      const headers = ['Name', 'Kategorie', 'Hersteller / Modell', 'Objekt / Ort', 'Status', 'Letzte Wartung', 'Nächste Wartung']
-      const colWidths = [32, 26, 48, 38, 30, 34, 34] // total ~242mm fits in 267
-      
+      const headers = [
+        'Name',
+        'Kategorie',
+        'Hersteller / Modell',
+        'Objekt / Ort',
+        'Status',
+        'Intervall',
+        'Letzte Wartung',
+        'Nächste Wartung',
+      ]
+
       doc.setFillColor(16, 185, 129)
       doc.rect(margin, yPos, usableWidth, 6.5, 'F')
       doc.setTextColor(255, 255, 255)
-      doc.setFontSize(7)
+      doc.setFontSize(6.5)
       doc.setFont('helvetica', 'bold')
-      
+
       let xPos = margin + 2
       headers.forEach((header, i) => {
         doc.text(header, xPos, yPos + 4.5)
-        xPos += colWidths[i]
+        xPos += pdfColWidths[i]
       })
       
       yPos += 8
@@ -253,15 +267,19 @@ export default function AssetsListPage() {
       const status = getAssetStatus(asset)
       const objectName = asset.objects ? `${asset.objects.name}${asset.objects.city ? ' • ' + asset.objects.city : ''}` : '—'
       const herstellerModell = `${asset.manufacturer || '—'}${asset.model ? ' / ' + asset.model : ''}`
-      
+      const iv = asset.maintenance_interval_months
+      const intervalStr =
+        iv != null && Number.isFinite(Number(iv)) ? `${Math.round(Number(iv))} Mo.` : '—'
+
       const rowData = [
-        asset.name.length > 22 ? asset.name.substring(0, 19) + '...' : asset.name,
+        asset.name.length > 20 ? asset.name.substring(0, 17) + '...' : asset.name,
         asset.category,
-        herstellerModell.length > 26 ? herstellerModell.substring(0, 23) + '...' : herstellerModell,
-        objectName.length > 24 ? objectName.substring(0, 21) + '...' : objectName,
+        herstellerModell.length > 24 ? herstellerModell.substring(0, 21) + '...' : herstellerModell,
+        objectName.length > 22 ? objectName.substring(0, 19) + '...' : objectName,
         status.label,
+        intervalStr,
         asset.last_maintenance ? new Date(asset.last_maintenance).toLocaleDateString('de-DE') : '—',
-        asset.next_maintenance_due ? new Date(asset.next_maintenance_due).toLocaleDateString('de-DE') : 'Nicht geplant'
+        asset.next_maintenance_due ? new Date(asset.next_maintenance_due).toLocaleDateString('de-DE') : 'Nicht geplant',
       ]
       
       // Alternating row background
@@ -270,9 +288,10 @@ export default function AssetsListPage() {
         doc.rect(margin, yPos - 1, usableWidth, rowHeight, 'F')
       }
       
-      let xPos = margin + 2
+      let rowXPos = margin + 2
       rowData.forEach((cell, i) => {
-        if (i === 4) { // Status column - color it
+        if (i === 4) {
+          // Status
           if (status.color === 'red') doc.setTextColor(185, 28, 28)
           else if (status.color === 'amber') doc.setTextColor(180, 83, 9)
           else if (status.color === 'emerald') doc.setTextColor(16, 185, 129)
@@ -280,8 +299,8 @@ export default function AssetsListPage() {
         } else {
           doc.setTextColor(31, 41, 55)
         }
-        doc.text(String(cell), xPos, yPos + 4)
-        xPos += [32, 26, 48, 38, 30, 34, 34][i]
+        doc.text(String(cell), rowXPos, yPos + 4)
+        rowXPos += pdfColWidths[i]
       })
       
       yPos += rowHeight
@@ -390,7 +409,7 @@ export default function AssetsListPage() {
           </div>
           <h3 className="mb-3 text-2xl font-semibold sm:mb-4 sm:text-3xl">Noch keine Anlagen</h3>
           <p className="mx-auto mb-6 max-w-md text-base text-slate-400 sm:mb-8 sm:text-lg">
-            Fügen Sie Ihre erste Anlage hinzu — z.&nbsp;B. Balkonkraftwerk, Wärmepumpe oder Filteranlage.
+            Fügen Sie Ihre erste Anlage hinzu — z.&nbsp;B. Balkonkraftwerk, Heizung oder Filteranlage.
           </p>
           <Link href="/dashboard/assets/new" className="btn-primary inline-flex items-center justify-center gap-2">
             <Plus className="h-5 w-5 shrink-0" />
@@ -417,100 +436,112 @@ export default function AssetsListPage() {
             const status = getAssetStatus(asset)
             const StatusIcon = status.icon
 
+            const intervalMonths =
+              asset.maintenance_interval_months != null && Number.isFinite(asset.maintenance_interval_months)
+                ? Math.round(asset.maintenance_interval_months)
+                : null
+
             return (
-              <div key={asset.id} className="card group overflow-hidden hover:border-emerald-500/50 transition-all flex flex-col">
-                {/* Image or Placeholder */}
-                <div className="relative flex h-48 items-center justify-center overflow-hidden bg-slate-900 sm:h-56">
+              <div
+                key={asset.id}
+                className="card group relative flex flex-col overflow-hidden hover:border-emerald-500/50 transition-all"
+              >
+                {/* festes Bildseitenverhältnis */}
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-slate-950">
                   {asset.image_url ? (
-                    <img 
-                      src={asset.image_url} 
+                    <img
+                      src={asset.image_url}
                       alt={asset.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   ) : (
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                        <Wrench className="w-8 h-8 text-emerald-500" />
+                    <div className="flex h-full w-full flex-col items-center justify-center px-6 text-center">
+                      <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800/90">
+                        <Wrench className="h-8 w-8 text-emerald-500" />
                       </div>
                       <p className="text-xs text-slate-500">Kein Foto hinterlegt</p>
                     </div>
                   )}
-                  
-                  {/* Category Badge on Image */}
-                  <div className="absolute top-4 left-4">
-                    <div className="px-3 py-1 bg-black/70 backdrop-blur-sm rounded-full text-xs font-medium text-white border border-white/10">
+
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25" />
+
+                  {/* Category Badge */}
+                  <div className="pointer-events-none absolute left-3 top-3 z-10 sm:left-4 sm:top-4">
+                    <div className="rounded-full border border-white/15 bg-black/65 px-2.5 py-1 text-[11px] font-medium text-white shadow-md backdrop-blur-md sm:text-xs">
                       {asset.category}
                     </div>
                   </div>
 
-                  {/* Status Badge on Image */}
-                  <div className="absolute top-4 right-4">
-                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.bg}`}>
-                      <StatusIcon className="w-3.5 h-3.5" />
-                      {status.label}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <div className="flex-1">
-                    <div className="mb-3 flex items-start justify-between">
-                      <div className="min-w-0">
-                        <Link href={`/dashboard/assets/${asset.id}`} className="transition-colors group-hover:text-emerald-400">
-                          <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">{asset.name}</h3>
-                        </Link>
-                        {asset.objects && (
-                          <p className="text-sm text-slate-500 mt-0.5">
-                            {asset.objects.name} {asset.objects.city && `• ${asset.objects.city}`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {(asset.manufacturer || asset.model) && (
-                      <p className="text-sm text-slate-400 mb-4">
-                        {asset.manufacturer} {asset.model && `• ${asset.model}`}
-                      </p>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="text-xs text-slate-500 mb-1">LETZTE WARTUNG</div>
-                        <div className="font-medium">
-                          {asset.last_maintenance 
-                            ? new Date(asset.last_maintenance).toLocaleDateString('de-DE')
-                            : '—'
-                          }
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-500 mb-1">NÄCHSTE WARTUNG</div>
-                        <div className="font-medium">
-                          {asset.next_maintenance_due 
-                            ? new Date(asset.next_maintenance_due).toLocaleDateString('de-DE')
-                            : 'Nicht geplant'
-                          }
-                        </div>
-                      </div>
+                  {/* Status Badge */}
+                  <div className="pointer-events-none absolute right-3 top-3 z-10 sm:right-4 sm:top-4">
+                    <div className={`flex max-w-[min(72vw,11rem)] items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium shadow-md backdrop-blur-md sm:text-xs ${status.bg}`}>
+                      <StatusIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{status.label}</span>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="mt-5 flex flex-col gap-2 border-t border-slate-800 pt-5 sm:mt-6 sm:flex-row sm:gap-3 sm:pt-6">
+                  {/* Aktionen über dem unteren Bildrand, immer lesbar */}
+                  <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-2 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent px-3 pb-3 pt-12 sm:flex-row sm:gap-2 sm:px-4 sm:pb-4">
                     <Link
                       href={`/dashboard/appointments/new?object_id=${encodeURIComponent(asset.object_id)}&asset_id=${encodeURIComponent(asset.id)}`}
-                      className="btn-secondary flex flex-1 items-center justify-center gap-2 py-2.5 text-sm"
+                      tabIndex={0}
+                      className="relative flex flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-500/35 bg-emerald-600 px-4 py-2.5 text-center text-sm font-medium text-white shadow-lg shadow-black/40 ring-2 ring-black/40 transition hover:bg-emerald-500 active:scale-[0.99] sm:text-sm"
                     >
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="h-4 w-4 shrink-0 opacity-95" aria-hidden />
                       Wartung planen
                     </Link>
                     <Link
                       href={`/dashboard/assets/${asset.id}`}
-                      className="flex flex-1 items-center justify-center rounded-2xl border border-slate-700 px-4 py-2.5 text-sm transition hover:bg-slate-800 sm:flex-initial"
+                      tabIndex={0}
+                      className="relative flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-slate-950/90 px-4 py-2.5 text-center text-sm font-medium text-slate-100 shadow-lg shadow-black/40 ring-2 ring-black/30 backdrop-blur-md transition hover:bg-slate-900 hover:text-white active:scale-[0.99] sm:text-sm"
                     >
                       Details &amp; Bearbeiten
                     </Link>
+                  </div>
+                </div>
+
+                {/* Textbereich ohne Buttons */}
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
+                  <div className="min-w-0">
+                    <Link href={`/dashboard/assets/${asset.id}`} className="transition-colors group-hover:text-emerald-400">
+                      <h3 className="text-lg font-semibold tracking-tight sm:text-xl">{asset.name}</h3>
+                    </Link>
+                    {asset.objects && (
+                      <p className="mt-1 text-sm text-slate-500">
+                        {asset.objects.name}
+                        {asset.objects.city && ` • ${asset.objects.city}`}
+                      </p>
+                    )}
+                  </div>
+
+                  {(asset.manufacturer || asset.model) && (
+                    <p className="mt-3 text-sm text-slate-400">
+                      {asset.manufacturer}
+                      {asset.model && ` • ${asset.model}`}
+                    </p>
+                  )}
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+                    <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 px-3 py-2.5">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Intervall</div>
+                      <div className="mt-1 font-semibold text-slate-100">
+                        {intervalMonths != null ? `${intervalMonths} Mon.` : '—'}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 px-3 py-2.5">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Letzte Wartung</div>
+                      <div className="mt-1 font-medium text-slate-200">
+                        {asset.last_maintenance ? new Date(asset.last_maintenance).toLocaleDateString('de-DE') : '—'}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 px-3 py-2.5">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Nächste Wartung</div>
+                      <div className="mt-1 font-medium text-slate-200">
+                        {asset.next_maintenance_due
+                          ? new Date(asset.next_maintenance_due).toLocaleDateString('de-DE')
+                          : 'Nicht geplant'}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

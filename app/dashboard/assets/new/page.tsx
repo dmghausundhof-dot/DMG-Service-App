@@ -21,7 +21,7 @@ import type { MaintenanceGuide } from '@/lib/maintenance-guide'
 
 const CATEGORIES = [
   'Balkonkraftwerk',
-  'Wärmepumpe',
+  'Heizung',
   'Entsalzungsanlage',
   'Wärmespeicher',
   'Filteranlage',
@@ -66,6 +66,7 @@ function applyMergedToForm(merged: AnalysisFields): {
 
   const name = merged.model?.trim() || merged.manufacturer?.trim() || 'Neue Anlage'
   let category = merged.category?.trim() || 'Sonstiges'
+  if (category === 'Wärmepumpe') category = 'Heizung'
   if (!CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
     category = 'Sonstiges'
   }

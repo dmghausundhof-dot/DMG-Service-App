@@ -122,7 +122,7 @@ export default async function DashboardOverview() {
             <div className="text-4xl font-semibold tabular-nums tracking-tighter text-emerald-400 lg:text-5xl">{totalAssets}</div>
           </div>
           <div className="text-lg font-semibold sm:text-xl">Sie haben {totalAssets} wartungsintensive Anlagen</div>
-          <p className="mt-1.5 text-sm text-slate-400">Balkonkraftwerk, Wärmepumpe, Filter etc.</p>
+          <p className="mt-1.5 text-sm text-slate-400">Balkonkraftwerk, Heizung, Filter etc.</p>
         </div>
 
         <div className="card group p-5 transition-all hover:border-emerald-500/50 sm:p-6 lg:p-8">
@@ -286,7 +286,7 @@ export default async function DashboardOverview() {
             {[
               { date: '08.05.2026', title: 'Servicebericht Balkonkraftwerk', type: 'report', status: 'Neu' },
               { date: '02.05.2026', title: 'Rechnung #INV-2026-047', type: 'invoice', status: 'Bezahlt' },
-              { date: '28.04.2026', title: 'Wartung Wärmepumpe abgeschlossen', type: 'report', status: 'Abgeschlossen' },
+              { date: '28.04.2026', title: 'Wartung Heizung abgeschlossen', type: 'report', status: 'Abgeschlossen' },
             ].map((item, index) => (
               <div
                 key={index}

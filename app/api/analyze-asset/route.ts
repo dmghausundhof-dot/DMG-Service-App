@@ -21,11 +21,11 @@ type WebEnrichment = Partial<VisionAnalysis> & {
   web_notes?: string | null
 }
 
-const VISION_PROMPT = `Du bist ein Experte für technische Hausinstallationen. Analysiere dieses Bild einer Anlage (Balkonkraftwerk, Wärmepumpe, Filteranlage, etc.).
+const VISION_PROMPT = `Du bist ein Experte für technische Hausinstallationen. Analysiere dieses Bild einer Anlage (Balkonkraftwerk, Heizung/Wärmepumpe, Filteranlage, etc.).
 
 Gib NUR ein valides JSON-Objekt zurück mit exakt diesen Feldern (kein Markdown, kein extra Text):
 {
-  "category": "Balkonkraftwerk" | "Wärmepumpe" | "Entsalzungsanlage" | "Wärmespeicher" | "Filteranlage" | "Wallbox" | "Starlink" | "Sonstiges",
+  "category": "Balkonkraftwerk" | "Heizung" | "Entsalzungsanlage" | "Wärmespeicher" | "Filteranlage" | "Wallbox" | "Starlink" | "Sonstiges",
   "manufacturer": string | null,
   "model": string | null,
   "year_built": number | null,
@@ -117,7 +117,9 @@ async function runVision(
   const text = extractResponsesOutputText(payload)
   if (!text) throw new Error('Leere Vision-Antwort (responses)')
   try {
-    return parseJsonObject<VisionAnalysis>(text)
+    const parsed = parseJsonObject<VisionAnalysis>(text)
+    if (parsed.category === 'Wärmepumpe') parsed.category = 'Heizung'
+    return parsed
   } catch (e) {
     console.warn('Vision JSON parse:', text.slice(0, 800))
     throw new Error(
@@ -366,6 +368,7 @@ export async function POST(request: NextRequest) {
     }
 
     const merged = mergeVisionAndWeb(vision, web)
+    if (merged.category === 'Wärmepumpe') merged.category = 'Heizung'
 
     let maintenanceGuide: MaintenanceGuide | null = null
     if (includeMaintenanceGuide) {

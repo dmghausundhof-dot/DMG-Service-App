@@ -89,7 +89,7 @@ export default function LandingPage() {
             {
               icon: <House className="w-7 h-7" />,
               title: "Ihre Objekte & Anlagen",
-              desc: "Haus, Wohnung oder Ferienimmobilie – alle Anlagen (Balkonkraftwerk, Wärmepumpe, Filter etc.) übersichtlich verwalten."
+              desc: "Haus, Wohnung oder Ferienimmobilie – alle Anlagen (Balkonkraftwerk, Heizung, Filter etc.) übersichtlich verwalten."
             },
             {
               icon: <FileText className="w-7 h-7" />,

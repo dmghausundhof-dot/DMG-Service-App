@@ -23,10 +23,9 @@ const withPWA = withPWAInit({
         },
       },
       {
-        urlPattern: ({ url, request, sameOrigin }) =>
-          !!sameOrigin &&
-          url.pathname.startsWith("/dashboard") &&
-          request.mode === "navigate",
+        /** App Router: nicht nur mode=navigate — sonst Workbox „no-response“ auf dynamischen Routen (z. B. /dashboard/assets/:id). */
+        urlPattern: ({ url, sameOrigin }) =>
+          !!sameOrigin && url.pathname.startsWith("/dashboard"),
         handler: "NetworkOnly",
         options: {
           cacheName: "dashboard-nav-bypass-sw-cache",

@@ -182,7 +182,8 @@ export default function AssetDetailPage() {
       // Prefill form
       setFormData({
         name: assetData.name || '',
-        category: assetData.category || 'Balkonkraftwerk',
+        category:
+          assetData.category === 'Wärmepumpe' ? 'Heizung' : assetData.category || 'Balkonkraftwerk',
         manufacturer: assetData.manufacturer || '',
         model: assetData.model || '',
         serial_number: assetData.serial_number || '',
@@ -638,7 +639,7 @@ export default function AssetDetailPage() {
                     className="input w-full"
                   >
                     <option value="Balkonkraftwerk">Balkonkraftwerk</option>
-                    <option value="Wärmepumpe">Wärmepumpe</option>
+                    <option value="Heizung">Heizung</option>
                     <option value="Entsalzungsanlage">Entsalzungsanlage</option>
                     <option value="Wärmespeicher">Wärmespeicher</option>
                     <option value="Filteranlage">Filteranlage</option>
