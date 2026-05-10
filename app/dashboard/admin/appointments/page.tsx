@@ -24,6 +24,7 @@ import {
   parseStoredTimeWindow,
   timeToMinutes,
 } from '@/lib/appointment-time-slots'
+import { isMaintenanceGuide } from '@/lib/maintenance-guide'
 
 interface Appointment {
   id: string
@@ -143,7 +144,9 @@ export default function AdminAppointmentsPage() {
         proposed_time_window,
         reschedule_requested_at,
         attachment_urls,
-        objects (name, city)
+        asset_id,
+        objects (name, city),
+        assets (id, name, category, manufacturer, model, ai_maintenance_guide)
       `)
       .in('status', ['requested', 'reschedule_requested'])
       .order('created_at', { ascending: true })
@@ -276,6 +279,38 @@ export default function AdminAppointmentsPage() {
                       <div className="text-xs text-slate-500 mb-1">OBJEKT</div>
                       <div className="font-medium">{appt.objects?.name} {appt.objects?.city && `• ${appt.objects.city}`}</div>
                     </div>
+
+                    {(() => {
+                      const la = appt.assets
+                        ? Array.isArray(appt.assets)
+                          ? appt.assets[0]
+                          : appt.assets
+                        : null
+                      if (!la?.id) return null
+                      const g = la.ai_maintenance_guide
+                      const parsed = g && isMaintenanceGuide(g) ? g : null
+                      return (
+                        <div className="mb-6 rounded-2xl border border-amber-900/40 bg-amber-950/20 p-4 text-sm">
+                          <div className="text-xs font-medium text-amber-400/95">VERKNÜPFTE ANLAGE</div>
+                          <div className="mt-1 font-medium text-slate-200">
+                            {la.name}
+                            <span className="font-normal text-slate-500">
+                              {' '}
+                              ({[la.category, la.manufacturer, la.model].filter(Boolean).join(' · ')})
+                            </span>
+                          </div>
+                          {parsed ? (
+                            <p className="mt-2 line-clamp-3 text-slate-400">{parsed.summary}</p>
+                          ) : null}
+                          <Link
+                            href={`/dashboard/assets/${la.id}`}
+                            className="mt-2 inline-block text-xs text-emerald-400 hover:underline"
+                          >
+                            Anlage im System öffnen →
+                          </Link>
+                        </div>
+                      )
+                    })()}
 
                     {Array.isArray(appt.attachment_urls) && appt.attachment_urls.length > 0 && (
                       <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium text-sky-400 bg-sky-950/40 border border-sky-900/50 px-3 py-1.5 rounded-full">

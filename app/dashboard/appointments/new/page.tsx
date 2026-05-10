@@ -20,6 +20,10 @@ import {
   APPOINTMENT_TIME_SLOTS as TIME_SLOTS,
   timeToMinutes,
 } from '@/lib/appointment-time-slots'
+import {
+  formatMaintenanceGuideForAppointment,
+  isMaintenanceGuide,
+} from '@/lib/maintenance-guide'
 
 interface ObjectOption {
   id: string
@@ -59,6 +63,8 @@ function NewAppointmentForm() {
   const galleryInputRef = useRef<HTMLInputElement>(null)
   type PendingPhoto = { file: File; preview: string }
   const [photos, setPhotos] = useState<PendingPhoto[]>([])
+  const [linkedAssetId, setLinkedAssetId] = useState<string | null>(null)
+  const hydratedAssetIdRef = useRef<string | null>(null)
 
   const addPhotos = useCallback((files: FileList | File[]) => {
     const arr = [...files].filter((f) => f.type.startsWith('image/'))
@@ -132,6 +138,47 @@ function NewAppointmentForm() {
     loadObjects()
   }, [router, supabase, searchParams])
 
+  useEffect(() => {
+    const aid = searchParams.get('asset_id')
+    if (!aid || loadingObjects || objects.length === 0) return
+    if (hydratedAssetIdRef.current === aid) return
+
+    let cancelled = false
+    async function hydrateFromAsset() {
+      const { data: asset } = await supabase
+        .from('assets')
+        .select('id, object_id, name, category, manufacturer, model, ai_maintenance_guide')
+        .eq('id', aid)
+        .maybeSingle()
+      if (cancelled || !asset || !objects.some((o) => o.id === asset.object_id)) return
+
+      hydratedAssetIdRef.current = aid
+      setLinkedAssetId(asset.id)
+
+      const baseDesc =
+        `Wartung für „${asset.name}“ (${asset.category}` +
+        (asset.manufacturer ? `, ${asset.manufacturer}` : '') +
+        (asset.model ? ` ${asset.model}` : '') +
+        ') — bitte Kontrolle/Instandhaltung laut Auftrag.'
+
+      setFormData((prev) => ({
+        ...prev,
+        object_id: asset.object_id,
+        service_type: 'Wartung',
+        description: prev.description.trim() ? prev.description : baseDesc,
+        customer_notes:
+          prev.customer_notes.trim() ||
+          (asset.ai_maintenance_guide && isMaintenanceGuide(asset.ai_maintenance_guide)
+            ? formatMaintenanceGuideForAppointment(asset.ai_maintenance_guide)
+            : ''),
+      }))
+    }
+    void hydrateFromAsset()
+    return () => {
+      cancelled = true
+    }
+  }, [loadingObjects, objects, searchParams, supabase])
+
   const minDateYmd = (() => {
     const d = new Date()
     const y = d.getFullYear()
@@ -199,10 +246,24 @@ function NewAppointmentForm() {
 
       if (!pid) throw new Error('Profil konnte nicht geladen werden.')
 
+      if (linkedAssetId) {
+        const { data: verify } = await supabase
+          .from('assets')
+          .select('id, object_id')
+          .eq('id', linkedAssetId)
+          .maybeSingle()
+        if (!verify || verify.object_id !== formData.object_id) {
+          setError('Die verknüpfte Anlage passt nicht zum gewählten Objekt.')
+          setIsSaving(false)
+          return
+        }
+      }
+
       const { data: created, error: insertError } = await supabase
         .from('appointments')
         .insert({
           object_id: formData.object_id,
+          asset_id: linkedAssetId,
           service_type: formData.service_type,
           preferred_date: d || null,
           time_window: tf && tt ? `${tf}-${tt}` : null,
@@ -340,10 +401,21 @@ function NewAppointmentForm() {
             <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Neuen Termin anfragen</h1>
             <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
               Wunschdatum, Zeitfenster und optional Fotos.
+              {linkedAssetId
+                ? ' Der Termin wird mit der ausgewählten Anlage und gespeicherten KI-Wartungshinweisen verknüpft.'
+                : ''}
             </p>
           </div>
         </div>
       </div>
+
+      {linkedAssetId ? (
+        <div className="mb-6 rounded-2xl border border-emerald-900/45 bg-emerald-950/30 px-4 py-4 text-sm text-emerald-100 sm:px-5">
+          Hinweis: Diese Terminanfrage bezieht sich auf eine konkrete Anlage aus dem Bestand — Ihre technischen Hinweise sind
+          im Feld für Bemerkungen vorausgefüllt (bitte prüfen). DMG entscheidet den Leistungsumfang vor Ort nach Vertrag und
+          Sicherheit.
+        </div>
+      ) : null}
 
       {error && (
         <div className="mb-6 p-4 bg-red-950/50 border border-red-900/50 rounded-2xl text-red-400 text-sm">

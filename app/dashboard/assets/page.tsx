@@ -498,14 +498,13 @@ export default function AssetsListPage() {
 
                   {/* Actions */}
                   <div className="mt-5 flex flex-col gap-2 border-t border-slate-800 pt-5 sm:mt-6 sm:flex-row sm:gap-3 sm:pt-6">
-                    <button 
-                      type="button"
-                      onClick={() => alert('Wartungs-Termin planen: Hier würde ein Termin-Formular mit vorausgefüllter Anlage erscheinen.')}
+                    <Link
+                      href={`/dashboard/appointments/new?object_id=${encodeURIComponent(asset.object_id)}&asset_id=${encodeURIComponent(asset.id)}`}
                       className="btn-secondary flex flex-1 items-center justify-center gap-2 py-2.5 text-sm"
                     >
                       <Calendar className="w-4 h-4" />
                       Wartung planen
-                    </button>
+                    </Link>
                     <Link
                       href={`/dashboard/assets/${asset.id}`}
                       className="flex flex-1 items-center justify-center rounded-2xl border border-slate-700 px-4 py-2.5 text-sm transition hover:bg-slate-800 sm:flex-initial"

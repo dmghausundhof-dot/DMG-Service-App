@@ -791,7 +791,10 @@ export default function AssetDetailPage() {
           <h2 className="text-3xl font-semibold tracking-tight flex items-center gap-3">
             <Calendar className="w-8 h-8 text-emerald-500" /> Verknüpfte Termine
           </h2>
-          <Link href="/dashboard/appointments/new" className="btn-secondary text-sm px-5 py-2 flex items-center gap-2">
+          <Link
+            href={`/dashboard/appointments/new?object_id=${encodeURIComponent(formData.object_id)}&asset_id=${encodeURIComponent(String(id))}`}
+            className="btn-secondary text-sm px-5 py-2 flex items-center gap-2"
+          >
             <Plus className="w-4 h-4" /> Neuen Termin anfragen
           </Link>
         </div>
@@ -846,7 +849,12 @@ export default function AssetDetailPage() {
           <div className="card p-6 text-center text-sm text-slate-400 sm:p-8 sm:text-base">
             Keine Termine für dieses Objekt vorhanden.
             <div className="mt-4">
-              <Link href="/dashboard/appointments/new" className="text-emerald-400 hover:underline">→ Neuen Termin anfragen</Link>
+              <Link
+                href={`/dashboard/appointments/new?object_id=${encodeURIComponent(formData.object_id)}&asset_id=${encodeURIComponent(String(id))}`}
+                className="text-emerald-400 hover:underline"
+              >
+                → Neuen Termin anfragen
+              </Link>
             </div>
           </div>
         )}

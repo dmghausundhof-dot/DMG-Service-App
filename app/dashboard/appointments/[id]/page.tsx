@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Loader2, X, Edit2, ImageIcon, Shield, User } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Loader2, X, Edit2, ImageIcon, Shield, User, Wrench } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import DeleteConfirmation from '@/components/DeleteConfirmation'
 import { AppointmentCalendarExports } from '@/components/AppointmentCalendarExports'
+import { isMaintenanceGuide } from '@/lib/maintenance-guide'
 
 interface AttachmentMeta {
   url: string
@@ -21,6 +22,15 @@ type CustomerProfileEmbed = {
   phone: string | null
 }
 
+interface LinkedAsset {
+  id: string
+  name: string
+  category: string
+  manufacturer: string | null
+  model: string | null
+  ai_maintenance_guide: unknown | null
+}
+
 interface Appointment {
   id: string
   service_type: string
@@ -30,6 +40,8 @@ interface Appointment {
   description: string | null
   customer_notes: string | null
   object_id: string
+  asset_id?: string | null
+  assets?: LinkedAsset | LinkedAsset[] | null
   attachment_urls?: AttachmentMeta[] | null
   objects: {
     name: string
@@ -66,6 +78,14 @@ const APPOINTMENT_DETAIL_SELECT = `
     city,
     profile_id,
     profiles (full_name, email, phone)
+  ),
+  assets (
+    id,
+    name,
+    category,
+    manufacturer,
+    model,
+    ai_maintenance_guide
   )
 `
 
@@ -562,6 +582,52 @@ export default function AppointmentDetailPage() {
               Objekt-Details ansehen →
             </Link>
           </div>
+
+          {(() => {
+            const la = appointment.assets
+              ? Array.isArray(appointment.assets)
+                ? appointment.assets[0]
+                : appointment.assets
+              : null
+            if (!la) return null
+            const g = la.ai_maintenance_guide
+            const parsed = g && isMaintenanceGuide(g) ? g : null
+            return (
+              <div className="card border border-amber-900/40 bg-amber-950/15 p-5 sm:p-6">
+                <h3 className="mb-3 flex items-center gap-2 font-semibold text-amber-200/95 sm:mb-4">
+                  <Wrench className="h-5 w-5 shrink-0 text-amber-400" /> Anlage &amp; Pflege (KI)
+                </h3>
+                <div className="text-base font-medium text-slate-100">{la.name}</div>
+                <div className="text-sm text-slate-500">
+                  {[la.category, la.manufacturer, la.model].filter(Boolean).join(' · ')}
+                </div>
+                <Link
+                  href={`/dashboard/assets/${la.id}`}
+                  className="mt-2 inline-block text-sm text-emerald-400 hover:underline"
+                >
+                  Stammdaten der Anlage →
+                </Link>
+                {parsed ? (
+                  <div className="mt-4 space-y-3 border-t border-slate-800 pt-4 text-sm">
+                    <p className="leading-relaxed text-slate-300">{parsed.summary}</p>
+                    {parsed.checklist.length ? (
+                      <ul className="list-inside list-disc space-y-1 text-slate-400">
+                        {parsed.checklist.slice(0, 8).map((c, i) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <p className="text-[11px] text-slate-600">
+                      Unverbindliche KI-Recherche beim Kunden — Abgleich mit Herstellerunterlagen und Vor-Ort-Begehung durch
+                      DMG.
+                    </p>
+                  </div>
+                ) : viewerIsAdmin ? (
+                  <p className="mt-3 text-xs text-slate-500">Keine strukturierten Pflegehinweise in der Anlage hinterlegt.</p>
+                ) : null}
+              </div>
+            )
+          })()}
 
           <div className="card p-5 text-sm text-slate-400 sm:p-6">
             <div className="font-medium text-white mb-2">Hinweis</div>

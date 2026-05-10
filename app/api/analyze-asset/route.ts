@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { MaintenanceGuide } from '@/lib/maintenance-guide'
 
 /** Längere Laufzeit für Reasoning-/Vision-Aufrufe (Vercel). */
 export const maxDuration = 120
+
+export type { MaintenanceGuide } from '@/lib/maintenance-guide'
 
 type VisionAnalysis = {
   category: string
@@ -187,6 +190,73 @@ Gib NUR valides JSON zurück (kein Markdown):
   }
 }
 
+async function runMaintenanceGuide(
+  apiKey: string,
+  merged: VisionAnalysis & { web_sources?: string[]; web_notes?: string | null },
+  webModel: string,
+): Promise<MaintenanceGuide | null> {
+  const hint = [
+    `Gerätetyp/Kategorie: ${merged.category}`,
+    merged.manufacturer ? `Hersteller: ${merged.manufacturer}` : null,
+    merged.model ? `Modellbezeichnung: ${merged.model}` : null,
+    merged.capacity ? `Leistung/Kapazität: ${merged.capacity}` : null,
+    merged.filter_type ? `Filter-/Medientyp: ${merged.filter_type}` : null,
+    merged.web_notes ? `Kontext (Web): ${merged.web_notes}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const prompt = `Du bist Servicetechniker für Haus- und Gebäudetechnik.
+
+Anhand der folgenden Angaben (teilweise aus Fotos + Web-Recherche, kann unvollständig sein) soll recherchiert werden, WIE diese Anlage typischerweise gewartet oder gepflegt wird (Intervall, Kontrollpunkte, Verbrauchsmaterial, Sicherheit).
+
+Geräteinformationen:
+${hint}
+
+Nutze Websuche nach Hersteller-Handbuch, typischen Wartungsintervallen und offiziellen Hinweisen. Wenn keine belastbaren Daten: checklist kürzer halten und typical_interval_months auf null setzen.
+
+Gib NUR gültiges JSON ohne Markdown zurück:
+{
+  "summary": string (kurz, max. 4 Sätze, Deutsch),
+  "typical_interval_months": number | null (nur wenn aus Quellen plausibel),
+  "checklist": string[] (kurze Stichpunkte, max 12, praktisch umsetzbar für Eigentümer WO sinnvoll — sonst „Fachbetrieb beauftragen“),
+  "safety_notes": string | null (z. B. elektrische/thermische Risiken, nur wenn relevant),
+  "when_to_call_professional": string | null (wann Fachfirma nötig ist),
+  "sources": string[] (max 5 URLs oder Quellentitel aus der Suche)
+}`
+
+  const response = await fetch('https://api.x.ai/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: webModel,
+      temperature: 0.2,
+      input: [{ role: 'user', content: prompt }],
+      tools: [{ type: 'web_search' }],
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.warn('Maintenance guide API error:', errorText)
+    return null
+  }
+
+  const payload = (await response.json()) as Record<string, unknown>
+  const text = extractResponsesOutputText(payload)
+  if (!text) return null
+
+  try {
+    return parseJsonObject<MaintenanceGuide>(text)
+  } catch {
+    console.warn('Maintenance guide parse failed:', text.slice(0, 500))
+    return null
+  }
+}
+
 function mergeVisionAndWeb(vision: VisionAnalysis, web: WebEnrichment | null): VisionAnalysis & { web_sources?: string[]; web_notes?: string | null } {
   if (!web) {
     return { ...vision }
@@ -235,9 +305,25 @@ const DEMO_WEB: WebEnrichment = {
   web_notes: 'Demo: XAI_API_KEY nicht gesetzt – keine Web-Ergänzung.',
 }
 
+const DEMO_MAINTENANCE: MaintenanceGuide = {
+  summary:
+    'Demo: Bei Speicher-Mini-PV-Anlagen prüfen Sie regelmäßig sichtbare Beschädigungen, Reinheit der Module und die Verkabelung nur bei spannungsfreiem Zustand durch den Fachbetrieb.',
+  typical_interval_months: 12,
+  checklist: [
+    'Visualprüfung Wechselrichter/Modul auf Risse, lose Kabel',
+    'App/Herstellersoftware auf Fehlermeldungen prüfen (Demo)',
+    'Keine Öffnung von Schutzgehäusen ohne Fachkunde',
+  ],
+  safety_notes: 'Arbeiten unter Spannung nur durch Elektrofachkraft.',
+  when_to_call_professional:
+    'Bei Fehlercodes, erhitzten Komponenten, Leistungseinbruch oder Gewährleistungsthemen den installierenden Betrieb kontaktieren.',
+  sources: ['Demo – keine Live-Suche ohne API-Key'],
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { imageBase64, mimeType = 'image/jpeg' } = await request.json()
+    const { imageBase64, mimeType = 'image/jpeg', includeMaintenanceGuide = true } =
+      await request.json()
 
     if (!imageBase64) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 })
@@ -256,6 +342,8 @@ export async function POST(request: NextRequest) {
         visionAnalysis: DEMO_VISION,
         webEnrichment: DEMO_WEB,
         merged,
+        maintenanceGuide: includeMaintenanceGuide ? DEMO_MAINTENANCE : null,
+        maintenanceGuideUsed: Boolean(includeMaintenanceGuide),
         webSearchUsed: false,
         message: DEMO_WEB.web_notes ?? 'Demo-Modus: XAI_API_KEY nicht gesetzt.',
       })
@@ -279,15 +367,30 @@ export async function POST(request: NextRequest) {
 
     const merged = mergeVisionAndWeb(vision, web)
 
+    let maintenanceGuide: MaintenanceGuide | null = null
+    if (includeMaintenanceGuide) {
+      try {
+        maintenanceGuide = await runMaintenanceGuide(apiKey, merged, webModel)
+      } catch (e) {
+        console.warn('Maintenance guide skipped:', e)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       visionAnalysis: vision,
       webEnrichment: web,
       merged,
+      maintenanceGuide,
+      maintenanceGuideUsed: maintenanceGuide !== null,
       webSearchUsed: web !== null,
       message: web
-        ? 'Auswertung abgeschlossen (Bild und Web).'
-        : 'Auswertung aus Bild; Web-Ergänzung nicht verfügbar.',
+        ? maintenanceGuide
+          ? 'Auswertung inkl. Wartungshinweisen (KI + Web).'
+          : 'Auswertung abgeschlossen (Bild und Web).'
+        : maintenanceGuide
+          ? 'Bild ausgewertet; Wartungshinweise ergänzt.'
+          : 'Auswertung aus Bild; Web-Ergänzung nicht verfügbar.',
     })
   } catch (error) {
     console.error('Analyze asset error:', error)
