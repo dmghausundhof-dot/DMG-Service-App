@@ -14,7 +14,9 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
+  completeAppointment,
   confirmAppointment,
+  startAppointment,
   rejectAppointment,
   rejectReschedule,
   updateAdminNote,
@@ -26,6 +28,7 @@ import {
 } from '@/lib/appointment-time-slots'
 interface Appointment {
   id: string
+  object_id: string
   service_type: string
   preferred_date: string | null
   time_window: string | null
@@ -45,6 +48,9 @@ interface Appointment {
 
 export default function AdminAppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([])
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'requested' | 'reschedule_requested' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+  >('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -130,6 +136,7 @@ export default function AdminAppointmentsPage() {
       .from('appointments')
       .select(`
         id, 
+        object_id,
         service_type, 
         preferred_date, 
         time_window, 
@@ -146,8 +153,7 @@ export default function AdminAppointmentsPage() {
         objects (name, city),
         assets (id, name, category, manufacturer, model)
       `)
-      .in('status', ['requested', 'reschedule_requested'])
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
 
     if (fetchError) {
       setError(`Fehler beim Laden der Termine: ${fetchError.message}`)
@@ -161,7 +167,23 @@ export default function AdminAppointmentsPage() {
     fetchAppointments()
   }, [])
 
-  const openRequests = appointments
+  const openRequests = appointments.filter(
+    (a) => a.status === 'requested' || a.status === 'reschedule_requested',
+  )
+  const visibleAppointments =
+    statusFilter === 'all'
+      ? appointments
+      : appointments.filter((a) => a.status === statusFilter)
+
+  const statusBuckets = [
+    { id: 'all', label: 'Alle' },
+    { id: 'requested', label: 'Angefragt' },
+    { id: 'reschedule_requested', label: 'Änderung angefragt' },
+    { id: 'confirmed', label: 'Bestätigt' },
+    { id: 'in_progress', label: 'In Bearbeitung' },
+    { id: 'completed', label: 'Abgeschlossen' },
+    { id: 'cancelled', label: 'Storniert' },
+  ] as const
 
   const handleAction = async (action: () => Promise<any>, id: string) => {
     setPendingId(id)
@@ -207,9 +229,9 @@ export default function AdminAppointmentsPage() {
       <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between lg:mb-10">
         <div>
           <div className="mb-1.5 text-xs font-semibold tracking-[2px] text-emerald-500 sm:text-sm sm:mb-2">ADMIN BEREICH</div>
-          <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Offene Anfragen</h1>
+          <h1 className="text-3xl font-semibold tracking-tighter sm:text-4xl lg:text-5xl">Terminpipeline</h1>
           <p className="mt-2 text-base text-slate-400 sm:text-lg lg:text-xl">
-            {openRequests.length} offene Terminanfragen • Bestätigen, Verschieben oder Ablehnen
+            {openRequests.length} offene Anfragen • {appointments.length} Gesamt
           </p>
         </div>
 
@@ -218,19 +240,43 @@ export default function AdminAppointmentsPage() {
         </Link>
       </div>
 
-      {openRequests.length === 0 ? (
+      <div className="mb-6 flex flex-wrap gap-2">
+        {statusBuckets.map((bucket) => {
+          const count =
+            bucket.id === 'all'
+              ? appointments.length
+              : appointments.filter((a) => a.status === bucket.id).length
+          const active = statusFilter === bucket.id
+          return (
+            <button
+              key={bucket.id}
+              type="button"
+              onClick={() => setStatusFilter(bucket.id)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                active
+                  ? 'border-emerald-500/60 bg-emerald-600/15 text-emerald-300'
+                  : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+              }`}
+            >
+              {bucket.label} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      {visibleAppointments.length === 0 ? (
         <div className="card px-5 py-10 text-center sm:p-12 lg:p-16">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600/10 sm:mb-6 sm:h-20 sm:w-20">
             <CheckCircle className="h-8 w-8 text-emerald-500 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="mb-3 text-2xl font-semibold sm:text-3xl">Alles erledigt!</h3>
+          <h3 className="mb-3 text-2xl font-semibold sm:text-3xl">Keine Termine im gewählten Filter</h3>
           <p className="mx-auto max-w-md text-base text-slate-400 sm:text-lg">
-            Es gibt derzeit keine offenen Terminanfragen oder Änderungswünsche.
+            Bitte anderen Status wählen oder später erneut prüfen.
           </p>
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          {openRequests.map((appt) => {
+          {visibleAppointments.map((appt) => {
             const isReschedule = appt.status === 'reschedule_requested'
 
             return (
@@ -244,8 +290,30 @@ export default function AdminAppointmentsPage() {
                           <h3 className="text-xl font-semibold tracking-tight transition-colors group-hover:text-emerald-400 sm:text-2xl">
                             {appt.service_type}
                           </h3>
-                          <div className={`px-3 py-1 rounded-full text-xs font-medium border ${isReschedule ? 'bg-purple-600/20 text-purple-400 border-purple-900/50' : 'bg-amber-600/20 text-amber-400 border-amber-900/50'}`}>
-                            {isReschedule ? '🔄 Änderungswunsch' : '🆕 Neue Anfrage'}
+                          <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                            appt.status === 'completed'
+                              ? 'bg-emerald-600/20 text-emerald-400 border-emerald-900/50'
+                              : appt.status === 'in_progress'
+                                ? 'bg-blue-600/20 text-blue-400 border-blue-900/50'
+                                : appt.status === 'confirmed'
+                                  ? 'bg-sky-600/20 text-sky-300 border-sky-900/50'
+                                  : appt.status === 'cancelled'
+                                    ? 'bg-red-600/20 text-red-400 border-red-900/50'
+                                    : isReschedule
+                                      ? 'bg-purple-600/20 text-purple-400 border-purple-900/50'
+                                      : 'bg-amber-600/20 text-amber-400 border-amber-900/50'
+                          }`}>
+                            {appt.status === 'completed'
+                              ? '✅ Abgeschlossen'
+                              : appt.status === 'in_progress'
+                                ? '🛠️ In Bearbeitung'
+                                : appt.status === 'confirmed'
+                                  ? '📅 Bestätigt'
+                                  : appt.status === 'cancelled'
+                                    ? '❌ Storniert'
+                                    : isReschedule
+                                      ? '🔄 Änderungswunsch'
+                                      : '🆕 Neue Anfrage'}
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
@@ -389,11 +457,61 @@ export default function AdminAppointmentsPage() {
                       </>
                     )}
 
+                    {(appt.status === 'confirmed' || appt.status === 'rescheduled') && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleAction(() => startAppointment(appt.id), appt.id)}
+                          disabled={pendingId === appt.id}
+                          className="w-full rounded-2xl border border-blue-900/60 bg-blue-950/30 px-6 py-3 text-sm text-blue-300 transition hover:bg-blue-950/50 disabled:opacity-50"
+                        >
+                          {pendingId === appt.id ? (
+                            <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Wird gestartet…</span>
+                          ) : (
+                            'Als in Bearbeitung starten'
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAction(() => completeAppointment(appt.id), appt.id)}
+                          disabled={pendingId === appt.id}
+                          className="w-full rounded-2xl border border-emerald-900/60 bg-emerald-950/30 px-6 py-3 text-sm text-emerald-300 transition hover:bg-emerald-950/50 disabled:opacity-50"
+                        >
+                          {pendingId === appt.id ? (
+                            <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Wird abgeschlossen…</span>
+                          ) : (
+                            'Direkt abschließen'
+                          )}
+                        </button>
+                      </>
+                    )}
+
+                    {appt.status === 'in_progress' && (
+                      <button
+                        type="button"
+                        onClick={() => handleAction(() => completeAppointment(appt.id), appt.id)}
+                        disabled={pendingId === appt.id}
+                        className="w-full rounded-2xl border border-emerald-900/60 bg-emerald-950/30 px-6 py-3 text-sm text-emerald-300 transition hover:bg-emerald-950/50 disabled:opacity-50"
+                      >
+                        {pendingId === appt.id ? (
+                          <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Wird abgeschlossen…</span>
+                        ) : (
+                          'Termin abschließen'
+                        )}
+                      </button>
+                    )}
+
                     <Link 
                       href={`/dashboard/appointments/${appt.id}`}
                       className="w-full btn-secondary py-3 flex items-center justify-center gap-2 text-sm"
                     >
                       Details ansehen <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href={`/dashboard/admin/documents/new?object_id=${encodeURIComponent(appt.object_id)}&appointment_id=${encodeURIComponent(appt.id)}${appt.asset_id ? `&asset_id=${encodeURIComponent(appt.asset_id)}` : ''}`}
+                      className="w-full rounded-2xl border border-emerald-900/60 bg-emerald-950/20 px-6 py-3 text-center text-sm text-emerald-300 transition hover:bg-emerald-950/40"
+                    >
+                      Servicebericht/Beleg verknüpfen
                     </Link>
 
                     {/* Quick admin note */}

@@ -9,9 +9,19 @@ import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 
 type ObjectRow = {
   id: string
+  profile_id: string
   name: string
   city: string | null
   profiles?: { full_name: string | null } | { full_name: string | null }[] | null
+}
+
+type AppointmentRow = {
+  id: string
+  object_id: string
+  asset_id: string | null
+  service_type: string
+  preferred_date: string | null
+  status: string
 }
 
 function customerName(row: ObjectRow): string {
@@ -25,17 +35,23 @@ function AdminBusinessDocumentForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const preObjectId = searchParams.get('object_id')
+  const preAppointmentId = searchParams.get('appointment_id')
+  const preAssetId = searchParams.get('asset_id')
+  const preProfileId = searchParams.get('profile_id')
   const supabase = createClient()
 
   const [allowed, setAllowed] = useState(false)
   const [objects, setObjects] = useState<ObjectRow[]>([])
   const [selectedObjectId, setSelectedObjectId] = useState('')
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState('')
+  const [selectedAssetId, setSelectedAssetId] = useState('')
   const [documentType, setDocumentType] = useState<'offer' | 'invoice' | 'report' | 'other'>('invoice')
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [appointments, setAppointments] = useState<AppointmentRow[]>([])
 
   useEffect(() => {
     async function gateAndLoad() {
@@ -60,19 +76,73 @@ function AdminBusinessDocumentForm() {
 
       const { data, error } = await supabase
         .from('objects')
-        .select('id, name, city, profiles (full_name)')
+        .select('id, profile_id, name, city, profiles (full_name)')
         .order('created_at', { ascending: false })
 
-      if (!error && data) setObjects(data as ObjectRow[])
+      if (!error && data) {
+        const rows = data as ObjectRow[]
+        setObjects(
+          preProfileId
+            ? rows.filter((row) => row.profile_id === preProfileId)
+            : rows,
+        )
+      }
     }
     gateAndLoad()
-  }, [router, supabase])
+  }, [router, supabase, preProfileId])
 
   useEffect(() => {
     if (preObjectId && objects.some((o) => o.id === preObjectId)) {
       setSelectedObjectId(preObjectId)
     }
   }, [preObjectId, objects])
+
+  useEffect(() => {
+    if (!preAppointmentId || preObjectId || selectedObjectId) return
+    async function hydrateFromAppointment() {
+      const { data } = await supabase
+        .from('appointments')
+        .select('id, object_id, asset_id')
+        .eq('id', preAppointmentId)
+        .maybeSingle()
+      if (!data) return
+      setSelectedObjectId((data.object_id as string) || '')
+      if (data.asset_id) setSelectedAssetId(String(data.asset_id))
+    }
+    void hydrateFromAppointment()
+  }, [preAppointmentId, preObjectId, selectedObjectId, supabase])
+
+  useEffect(() => {
+    if (!selectedObjectId) {
+      setAppointments([])
+      setSelectedAppointmentId('')
+      if (!preAssetId) setSelectedAssetId('')
+      return
+    }
+
+    async function loadAppointmentsForObject() {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id, object_id, asset_id, service_type, preferred_date, status')
+        .eq('object_id', selectedObjectId)
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (!error && data) {
+        const rows = data as AppointmentRow[]
+        setAppointments(rows)
+        if (preAppointmentId && rows.some((r) => r.id === preAppointmentId)) {
+          setSelectedAppointmentId(preAppointmentId)
+          const match = rows.find((r) => r.id === preAppointmentId)
+          if (match?.asset_id) setSelectedAssetId(match.asset_id)
+        }
+      }
+    }
+    void loadAppointmentsForObject()
+  }, [selectedObjectId, preAppointmentId, preAssetId, supabase])
+
+  useEffect(() => {
+    if (preAssetId) setSelectedAssetId(preAssetId)
+  }, [preAssetId])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -112,6 +182,8 @@ function AdminBusinessDocumentForm() {
 
       const { error: insertError } = await supabase.from('documents').insert({
         object_id: selectedObjectId,
+        appointment_id: selectedAppointmentId || null,
+        asset_id: selectedAssetId || null,
         type: documentType,
         title: title.trim(),
         file_url: publicUrl,
@@ -153,6 +225,12 @@ function AdminBusinessDocumentForm() {
         <p className="text-base text-slate-400 sm:text-lg lg:text-xl">
           Nur für den Betrieb: Belege und weitere Dokumente dem passenden Objekt zuordnen.
         </p>
+        {(preAppointmentId || preAssetId) && (
+          <p className="mt-2 text-xs text-emerald-300">
+            Kontext erkannt: {preAppointmentId ? `Termin ${preAppointmentId.slice(0, 8)}…` : ''}{' '}
+            {preAssetId ? `• Anlage ${preAssetId.slice(0, 8)}…` : ''}
+          </p>
+        )}
       </div>
 
       <div className="card p-5 sm:p-6 lg:p-8">
@@ -177,6 +255,38 @@ function AdminBusinessDocumentForm() {
                 )
               })}
             </select>
+          </div>
+
+          <div>
+            <label className="text-sm text-slate-300 block mb-2">Terminbezug (optional)</label>
+            <select
+              value={selectedAppointmentId}
+              onChange={(e) => {
+                const id = e.target.value
+                setSelectedAppointmentId(id)
+                const match = appointments.find((a) => a.id === id)
+                if (match?.asset_id) setSelectedAssetId(match.asset_id)
+              }}
+              className="input w-full text-base"
+            >
+              <option value="">— Kein Terminbezug —</option>
+              {appointments.map((appt) => (
+                <option key={appt.id} value={appt.id}>
+                  {appt.service_type} · {appt.preferred_date ? new Date(appt.preferred_date).toLocaleDateString('de-DE') : 'ohne Datum'} · {appt.status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm text-slate-300 block mb-2">Anlagenbezug (optional UUID)</label>
+            <input
+              type="text"
+              value={selectedAssetId}
+              onChange={(e) => setSelectedAssetId(e.target.value.trim())}
+              className="input w-full text-base"
+              placeholder="asset_id (optional)"
+            />
           </div>
 
           <div>

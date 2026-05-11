@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, Clock, AlertTriangle, CheckCircle, MapPin, Loader2, X, Edit2, ImageIcon, Shield, User, Wrench } from 'lucide-react'
@@ -8,6 +8,11 @@ import { createClient } from '@/lib/supabase/client'
 import { getOrCreateProfileId } from '@/lib/supabase/ensure-profile'
 import DeleteConfirmation from '@/components/DeleteConfirmation'
 import { AppointmentCalendarExports } from '@/components/AppointmentCalendarExports'
+import {
+  completeAppointment,
+  rejectAppointment,
+  startAppointment,
+} from '@/app/dashboard/admin/appointments/actions'
 interface AttachmentMeta {
   url: string
   file_name?: string
@@ -117,6 +122,8 @@ export default function AppointmentDetailPage() {
   // Modals
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [adminPendingAction, setAdminPendingAction] = useState<string | null>(null)
+  const [, startAdminTransition] = useTransition()
 
   // Reschedule form
   const [rescheduleReason, setRescheduleReason] = useState('')
@@ -282,6 +289,39 @@ export default function AppointmentDetailPage() {
     }
   }
 
+  const refreshAppointment = async () => {
+    if (!appointment) return
+    const { data: updated } = await supabase
+      .from('appointments')
+      .select(APPOINTMENT_DETAIL_SELECT)
+      .eq('id', appointment.id)
+      .single()
+    if (updated) setAppointment(updated as Appointment)
+  }
+
+  const handleAdminAction = (kind: 'start' | 'complete' | 'cancel') => {
+    if (!appointment) return
+    setAdminPendingAction(kind)
+    startAdminTransition(async () => {
+      try {
+        const result =
+          kind === 'start'
+            ? await startAppointment(appointment.id)
+            : kind === 'complete'
+              ? await completeAppointment(appointment.id)
+              : await rejectAppointment(appointment.id)
+        if (result?.success) {
+          alert(result.message || 'Status wurde aktualisiert.')
+          await refreshAppointment()
+        }
+      } catch (err: unknown) {
+        alert(err instanceof Error ? err.message : 'Aktion fehlgeschlagen.')
+      } finally {
+        setAdminPendingAction(null)
+      }
+    })
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10 text-center">
@@ -380,15 +420,53 @@ export default function AppointmentDetailPage() {
           <div className="flex-1 min-w-[220px] space-y-2">
             <div className="font-semibold text-amber-100">Admin-Ansicht</div>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Sie sehen diese Terminanfrage mit Kundendaten. Änderungen durch den Kunden (Verschiebung / Storno) sind hier deaktiviert –
-              bitte Aktionen unter <strong className="text-slate-300">Admin: Anfragen</strong> durchführen oder den Kunden kontaktieren.
+              Sie sehen diese Terminanfrage mit Kundendaten. Admin-Aktionen sind direkt hier möglich; für Filter und Gesamtsteuerung steht weiterhin
+              <strong className="text-slate-300"> Admin: Anfragen</strong> zur Verfügung.
             </p>
-            <Link
-              href="/dashboard/admin/appointments"
-              className="inline-flex text-sm text-emerald-400 hover:text-emerald-300 hover:underline"
-            >
-              → Zu den offenen Admin-Anfragen
-            </Link>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {['confirmed', 'rescheduled'].includes(appointment.status) ? (
+                <button
+                  type="button"
+                  disabled={adminPendingAction !== null}
+                  onClick={() => handleAdminAction('start')}
+                  className="rounded-xl border border-blue-900/60 bg-blue-950/30 px-3 py-2 text-xs font-medium text-blue-300 hover:bg-blue-950/50 disabled:opacity-50"
+                >
+                  {adminPendingAction === 'start' ? 'Wird gestartet…' : 'In Bearbeitung starten'}
+                </button>
+              ) : null}
+              {['in_progress', 'confirmed', 'rescheduled'].includes(appointment.status) ? (
+                <button
+                  type="button"
+                  disabled={adminPendingAction !== null}
+                  onClick={() => handleAdminAction('complete')}
+                  className="rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-3 py-2 text-xs font-medium text-emerald-300 hover:bg-emerald-950/50 disabled:opacity-50"
+                >
+                  {adminPendingAction === 'complete' ? 'Wird abgeschlossen…' : 'Termin abschließen'}
+                </button>
+              ) : null}
+              {!['completed', 'cancelled'].includes(appointment.status) ? (
+                <button
+                  type="button"
+                  disabled={adminPendingAction !== null}
+                  onClick={() => handleAdminAction('cancel')}
+                  className="rounded-xl border border-red-900/60 bg-red-950/30 px-3 py-2 text-xs font-medium text-red-300 hover:bg-red-950/50 disabled:opacity-50"
+                >
+                  {adminPendingAction === 'cancel' ? 'Wird storniert…' : 'Termin stornieren'}
+                </button>
+              ) : null}
+              <Link
+                href="/dashboard/admin/appointments"
+                className="inline-flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-emerald-400 hover:underline"
+              >
+                Zur Admin-Pipeline
+              </Link>
+              <Link
+                href={`/dashboard/admin/documents/new?object_id=${encodeURIComponent(appointment.object_id)}&appointment_id=${encodeURIComponent(appointment.id)}${appointment.asset_id ? `&asset_id=${encodeURIComponent(String(appointment.asset_id))}` : ''}`}
+                className="inline-flex items-center rounded-xl border border-emerald-900/60 bg-emerald-950/30 px-3 py-2 text-xs font-medium text-emerald-300 hover:bg-emerald-950/50"
+              >
+                Servicebericht/Beleg anlegen
+              </Link>
+            </div>
           </div>
         </div>
       )}

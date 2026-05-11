@@ -9,6 +9,7 @@ import {
   FileText, 
   Wrench, 
   User, 
+  Users,
   LogOut, 
   Menu, 
   X,
@@ -29,6 +30,8 @@ const baseNavItems = [
 ]
 
 const adminNavItems = [
+  { href: '/dashboard/admin', label: 'Admin: Dashboard', icon: Shield },
+  { href: '/dashboard/admin/customers', label: 'Admin: Kunden', icon: Users },
   { href: '/dashboard/admin/appointments', label: 'Admin: Anfragen', icon: Shield },
   { href: '/dashboard/admin/documents/new', label: 'Admin: Belege', icon: FileUp },
 ]
