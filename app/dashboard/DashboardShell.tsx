@@ -34,6 +34,7 @@ const adminNavItems = [
   { href: '/dashboard/admin/customers', label: 'Admin: Kunden', icon: Users },
   { href: '/dashboard/admin/appointments', label: 'Admin: Anfragen', icon: Shield },
   { href: '/dashboard/admin/documents/new', label: 'Admin: Belege', icon: FileUp },
+  { href: '/dashboard/admin/documents/quality', label: 'Admin: Qualität', icon: FileText },
 ]
 
 export default function DashboardShell({

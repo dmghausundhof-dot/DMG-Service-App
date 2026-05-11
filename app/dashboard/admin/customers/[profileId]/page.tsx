@@ -13,6 +13,7 @@ import { CustomerObjectsList } from '@/components/admin/CustomerObjectsList'
 import { CustomerAssetsList } from '@/components/admin/CustomerAssetsList'
 import { CustomerAppointmentsTable } from '@/components/admin/CustomerAppointmentsTable'
 import { CustomerDocumentsTable } from '@/components/admin/CustomerDocumentsTable'
+import { ContextChips } from '@/components/admin/ContextChips'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,10 +53,13 @@ export default async function AdminCustomerDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link href="/dashboard/admin/customers" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
-          <ArrowLeft className="h-4 w-4" /> Zurück zur Kundenliste
-        </Link>
+      <div className="sticky top-3 z-20 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 backdrop-blur sm:p-4">
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/dashboard/admin/customers" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+            <ArrowLeft className="h-4 w-4" /> Zurück zur Kundenliste
+          </Link>
+          <ContextChips customerId={profileId} objectId={preferredObjectId || undefined} />
+        </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
             href={preferredObjectId ? `/dashboard/appointments/new?object_id=${encodeURIComponent(preferredObjectId)}` : '/dashboard/appointments/new'}
@@ -66,7 +70,7 @@ export default async function AdminCustomerDetailPage({ params }: PageProps) {
           <Link
             href={
               preferredObjectId
-                ? `/dashboard/admin/documents/new?object_id=${encodeURIComponent(preferredObjectId)}`
+                ? `/dashboard/admin/documents/new?object_id=${encodeURIComponent(preferredObjectId)}&profile_id=${encodeURIComponent(profileId)}`
                 : '/dashboard/admin/documents/new'
             }
             className="btn-primary inline-flex items-center justify-center gap-2"
@@ -74,6 +78,13 @@ export default async function AdminCustomerDetailPage({ params }: PageProps) {
             <FilePlus2 className="h-4 w-4" /> Beleg hochladen
           </Link>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link href="/dashboard/admin/customers" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+          <ArrowLeft className="h-4 w-4" /> Zurück zur Kundenliste
+        </Link>
+        <div className="text-xs text-slate-500">Kundenakte & Verknüpfungen</div>
       </div>
 
       <CustomerHeaderCard customer={customer} />

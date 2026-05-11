@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { CustomerAppointment } from '@/lib/admin/queries'
+import { ContextChips } from '@/components/admin/ContextChips'
 
 type Props = {
   appointments: CustomerAppointment[]
@@ -51,12 +52,15 @@ export function CustomerAppointmentsTable({ appointments }: Props) {
                     </span>
                   </td>
                   <td className="px-3 py-3 text-right">
-                    <Link
-                      href={`/dashboard/appointments/${item.id}`}
-                      className="text-xs font-medium text-emerald-400 hover:underline"
-                    >
-                      Öffnen
-                    </Link>
+                    <div className="flex flex-col items-end gap-1">
+                      <Link
+                        href={`/dashboard/appointments/${item.id}`}
+                        className="text-xs font-medium text-emerald-400 hover:underline"
+                      >
+                        Öffnen
+                      </Link>
+                      <ContextChips appointmentId={item.id} objectId={item.object_id} />
+                    </div>
                   </td>
                 </tr>
               ))}

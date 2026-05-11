@@ -160,6 +160,14 @@ function AdminBusinessDocumentForm() {
       alert('Bitte Kunden-Objekt, Titel und Datei auswählen.')
       return
     }
+    if (documentType === 'report' && !selectedAppointmentId) {
+      alert('Für Serviceberichte ist ein Terminbezug erforderlich.')
+      return
+    }
+    if ((documentType === 'invoice' || documentType === 'offer') && !selectedAppointmentId && !selectedAssetId) {
+      alert('Für Rechnung/Angebot bitte mindestens Termin- oder Anlagenbezug setzen.')
+      return
+    }
 
     setIsUploading(true)
     try {
@@ -276,6 +284,9 @@ function AdminBusinessDocumentForm() {
                 </option>
               ))}
             </select>
+            {documentType === 'report' && !selectedAppointmentId && (
+              <p className="mt-2 text-xs text-amber-300">Servicebericht benötigt einen Terminbezug.</p>
+            )}
           </div>
 
           <div>
@@ -287,6 +298,9 @@ function AdminBusinessDocumentForm() {
               className="input w-full text-base"
               placeholder="asset_id (optional)"
             />
+            {(documentType === 'invoice' || documentType === 'offer') && !selectedAppointmentId && !selectedAssetId && (
+              <p className="mt-2 text-xs text-amber-300">Für Rechnung/Angebot wird ein Termin- oder Anlagenbezug erwartet.</p>
+            )}
           </div>
 
           <div>

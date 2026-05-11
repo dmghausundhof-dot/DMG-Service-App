@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
   Calendar,
@@ -46,20 +46,62 @@ interface Appointment {
   } | null
 }
 
+type StatusFilter =
+  | 'all'
+  | 'requested'
+  | 'reschedule_requested'
+  | 'confirmed'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+
+type ActionResult = {
+  success?: boolean
+  message?: string
+}
+
 export default function AdminAppointmentsPage() {
-  const [appointments, setAppointments] = useState<any[]>([])
-  const [statusFilter, setStatusFilter] = useState<
-    'all' | 'requested' | 'reschedule_requested' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
-  >('all')
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
+    if (typeof window === 'undefined') return 'all'
+    const raw = window.localStorage.getItem('admin.pipeline.statusFilter')
+    const allowed: StatusFilter[] = [
+      'all',
+      'requested',
+      'reschedule_requested',
+      'confirmed',
+      'in_progress',
+      'completed',
+      'cancelled',
+    ]
+    return raw && allowed.includes(raw as StatusFilter) ? (raw as StatusFilter) : 'all'
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [pendingId, setPendingId] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [scheduleAppt, setScheduleAppt] = useState<Appointment | null>(null)
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTimeFrom, setScheduleTimeFrom] = useState('')
   const [scheduleTimeTo, setScheduleTimeTo] = useState('')
+  const [savedViews, setSavedViews] = useState<Array<{ key: string; label: string; status: StatusFilter }>>(() => {
+    const defaults: Array<{ key: string; label: string; status: StatusFilter }> = [
+      { key: 'only-open', label: 'Nur offen', status: 'requested' },
+      { key: 'in-work', label: 'In Arbeit', status: 'in_progress' },
+      { key: 'completed', label: 'Abgeschlossen', status: 'completed' },
+    ]
+    if (typeof window === 'undefined') return defaults
+    const raw = window.localStorage.getItem('admin.pipeline.savedViews')
+    if (!raw) return defaults
+    try {
+      const parsed = JSON.parse(raw) as Array<{ key: string; label: string; status: StatusFilter }>
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    } catch {
+      // ignore corrupted storage
+    }
+    return defaults
+  })
   const supabase = createClient()
 
   const scheduleEndSlots = scheduleTimeFrom
@@ -120,7 +162,7 @@ export default function AdminAppointmentsPage() {
     })
   }
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     setLoading(true)
     setError('')
 
@@ -158,14 +200,18 @@ export default function AdminAppointmentsPage() {
     if (fetchError) {
       setError(`Fehler beim Laden der Termine: ${fetchError.message}`)
     } else {
-      setAppointments(data || [])
+      setAppointments((data as Appointment[]) || [])
     }
     setLoading(false)
-  }
+  }, [supabase])
 
   useEffect(() => {
     fetchAppointments()
   }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem('admin.pipeline.statusFilter', statusFilter)
+  }, [statusFilter])
 
   const openRequests = appointments.filter(
     (a) => a.status === 'requested' || a.status === 'reschedule_requested',
@@ -185,7 +231,18 @@ export default function AdminAppointmentsPage() {
     { id: 'cancelled', label: 'Storniert' },
   ] as const
 
-  const handleAction = async (action: () => Promise<any>, id: string) => {
+  const saveCurrentView = () => {
+    const label = window.prompt('Name der gespeicherten Ansicht?', `View ${savedViews.length + 1}`)
+    if (!label?.trim()) return
+    const next = [
+      ...savedViews,
+      { key: `${Date.now()}`, label: label.trim(), status: statusFilter },
+    ].slice(-8)
+    setSavedViews(next)
+    window.localStorage.setItem('admin.pipeline.savedViews', JSON.stringify(next))
+  }
+
+  const handleAction = async (action: () => Promise<ActionResult>, id: string) => {
     setPendingId(id)
     startTransition(async () => {
       try {
@@ -194,8 +251,8 @@ export default function AdminAppointmentsPage() {
           alert(result.message || 'Erfolgreich!')
           fetchAppointments()
         }
-      } catch (err: any) {
-        alert(err.message || 'Ein Fehler ist aufgetreten')
+      } catch (err: unknown) {
+        alert(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
       } finally {
         setPendingId(null)
       }
@@ -262,6 +319,26 @@ export default function AdminAppointmentsPage() {
             </button>
           )
         })}
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={saveCurrentView}
+          className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 hover:border-slate-600"
+        >
+          Aktuelle Ansicht speichern
+        </button>
+        {savedViews.map((view) => (
+          <button
+            key={view.key}
+            type="button"
+            onClick={() => setStatusFilter(view.status)}
+            className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-400 hover:border-emerald-500/60 hover:text-emerald-300"
+          >
+            {view.label}
+          </button>
+        ))}
       </div>
 
       {visibleAppointments.length === 0 ? (
@@ -647,7 +724,7 @@ export default function AdminAppointmentsPage() {
       )}
 
       <div className="mt-12 text-center text-xs text-slate-500">
-        Tipp: Klicken Sie auf "Details ansehen" für die vollständige Terminansicht und weitere Optionen.
+        Tipp: Klicken Sie auf &quot;Details ansehen&quot; für die vollständige Terminansicht und weitere Optionen.
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { CustomerDocument } from '@/lib/admin/queries'
+import { ContextChips } from '@/components/admin/ContextChips'
 
 type Props = {
   documents: CustomerDocument[]
@@ -45,14 +46,17 @@ export function CustomerDocumentsTable({ documents }: Props) {
                     {item.created_at ? new Date(item.created_at).toLocaleDateString('de-DE') : '—'}
                   </td>
                   <td className="px-3 py-3 text-right">
-                    <Link
-                      href={item.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-medium text-emerald-400 hover:underline"
-                    >
-                      Öffnen
-                    </Link>
+                    <div className="flex flex-col items-end gap-1">
+                      <Link
+                        href={item.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-emerald-400 hover:underline"
+                      >
+                        Öffnen
+                      </Link>
+                      <ContextChips objectId={item.object_id} />
+                    </div>
                   </td>
                 </tr>
               ))}
