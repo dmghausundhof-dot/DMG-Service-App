@@ -3,7 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, fullName } = await request.json()
+    const { userId, fullName, phone } = await request.json()
+    const normalizedPhone =
+      typeof phone === 'string' && phone.trim().length > 0 ? phone.trim() : null
 
     const supabase = await createClient()
 
@@ -13,7 +15,8 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: userId,
         full_name: fullName,
-        email: '', 
+        phone: normalizedPhone,
+        email: '',
       })
 
     if (profileError && !profileError.message.includes('duplicate')) {

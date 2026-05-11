@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { House, Calendar, FileText, Users, ArrowRight, Phone, MessageCircle } from 'lucide-react'
+import { House, Calendar, FileText, Users, Camera, Bell, ArrowRight, Phone, MessageCircle } from 'lucide-react'
 
 export default function LandingPage() {
   return (
@@ -107,12 +107,12 @@ export default function LandingPage() {
               desc: "Ihre Daten, Kontakte und Präferenzen zentral gespeichert – für schnelle und persönliche Betreuung."
             },
             {
-              icon: <div className="text-3xl">📸</div>,
+              icon: <Camera className="w-7 h-7" />,
               title: "Anlagen mit Foto erfassen",
               desc: "Foto der Anlage hochladen und Stammdaten eingeben oder aus Vorschlägen übernehmen."
             },
             {
-              icon: <div className="text-3xl">🔔</div>,
+              icon: <Bell className="w-7 h-7" />,
               title: "Terminübersicht",
               desc: "Gebuchte und angefragte Termine im Kundenportal nachverfolgen."
             }

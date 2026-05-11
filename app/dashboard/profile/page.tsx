@@ -64,6 +64,12 @@ export default function ProfilePage() {
     setSaving(true)
     setMessage(null)
 
+    if (!phone.trim()) {
+      setMessage({ type: 'error', text: 'Telefonnummer ist ein Pflichtfeld.' })
+      setSaving(false)
+      return
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -76,7 +82,7 @@ export default function ProfilePage() {
       .from('profiles')
       .update({
         full_name: fullName,
-        phone: phone || null,
+        phone: phone.trim(),
         email: email || null,
         notes: notes || null,
         updated_at: new Date().toISOString()
@@ -246,13 +252,14 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Telefon</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Telefon *</label>
               <input 
                 type="tel" 
                 value={phone} 
                 onChange={(e) => setPhone(e.target.value)}
                 className="input w-full py-3 text-base"
                 placeholder="+49 176 12345678"
+                required
               />
             </div>
             <div>

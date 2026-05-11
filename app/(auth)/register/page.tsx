@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -20,6 +21,10 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!phone.trim()) {
+      setError('Bitte geben Sie eine Telefonnummer an.')
+      return
+    }
     if (!acceptedLegal) {
       setError('Bitte stimmen Sie den Nutzungsbedingungen und der Datenschutzerklärung zu.')
       return
@@ -33,6 +38,7 @@ export default function RegisterPage() {
       options: {
         data: {
           full_name: fullName,
+          phone: phone.trim(),
         },
       },
     })
@@ -48,6 +54,7 @@ export default function RegisterPage() {
           body: JSON.stringify({
             userId: authData.user.id,
             fullName,
+            phone: phone.trim(),
           }),
         })
         
@@ -118,6 +125,18 @@ export default function RegisterPage() {
                 required
                 className="input w-full text-base sm:text-lg"
                 placeholder="Max Mustermann"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300 sm:mb-2">Telefonnummer</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                className="input w-full text-base sm:text-lg"
+                placeholder="+49 176 12345678"
               />
             </div>
 

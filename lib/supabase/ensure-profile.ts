@@ -23,14 +23,16 @@ export async function getOrCreateProfileId(
 
   if (existing?.id) return existing.id
 
-  const meta = user.user_metadata as { full_name?: string } | undefined
+  const meta = user.user_metadata as { full_name?: string; phone?: string } | undefined
   const fullName = meta?.full_name?.trim() || user.email?.split('@')[0] || 'Kunde'
+  const phone = meta?.phone?.trim() || null
 
   // Upsert ohne Update bei Konflikt: vermeidet 409 Race bei parallelem ersten Login.
   const { error: upsertError } = await supabase.from('profiles').upsert(
     {
       user_id: user.id,
       full_name: fullName,
+      phone,
       email: user.email ?? '',
     },
     { onConflict: 'user_id', ignoreDuplicates: true },
