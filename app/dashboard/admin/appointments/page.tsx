@@ -29,6 +29,7 @@ import {
 interface Appointment {
   id: string
   object_id: string
+  asset_id: string | null
   service_type: string
   preferred_date: string | null
   time_window: string | null
@@ -40,6 +41,23 @@ interface Appointment {
   proposed_preferred_date: string | null
   proposed_time_window: string | null
   reschedule_requested_at: string | null
+  attachment_urls?: string[] | null
+  assets?:
+    | {
+        id: string
+        name: string
+        category: string
+        manufacturer: string | null
+        model: string | null
+      }
+    | Array<{
+        id: string
+        name: string
+        category: string
+        manufacturer: string | null
+        model: string | null
+      }>
+    | null
   objects: {
     name: string
     city: string | null
@@ -200,7 +218,21 @@ export default function AdminAppointmentsPage() {
     if (fetchError) {
       setError(`Fehler beim Laden der Termine: ${fetchError.message}`)
     } else {
-      setAppointments((data as Appointment[]) || [])
+      setAppointments(
+        ((data ?? []) as Array<Record<string, unknown>>).map((row) => {
+          const objectsRaw = row.objects as
+            | { name: string; city: string | null }
+            | Array<{ name: string; city: string | null }>
+            | null
+          const object =
+            Array.isArray(objectsRaw) ? (objectsRaw[0] ?? null) : (objectsRaw ?? null)
+
+          return {
+            ...(row as unknown as Appointment),
+            objects: object,
+          }
+        }),
+      )
     }
     setLoading(false)
   }, [supabase])
